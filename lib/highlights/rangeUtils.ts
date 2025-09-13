@@ -187,7 +187,7 @@ export function isRangeValid(range: Range): boolean {
       range.endContainer.isConnected &&
       range.toString().length > 0
     );
-  } catch (error) {
+  } catch {
     return false;
   }
 }

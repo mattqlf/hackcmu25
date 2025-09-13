@@ -2,9 +2,12 @@
 
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { useDispatch } from 'react-redux';
+import type { AppDispatch } from '@/components/providers/SidenotesProvider';
 import { Sidenote, AnchorBase, actions } from 'sidenotes';
 import { HighlightPopover } from './HighlightPopover';
-import { serializeRange, deserializeRange, getRangeBounds, type SerializedRange } from '@/lib/highlights/rangeUtils';
+import { serializeRange, type SerializedRange } from '@/lib/highlights/modernRangeUtils';
+import { deserializeRange, getRangeBounds } from '@/lib/highlights/rangeUtils';
+import type { SerializedRange as OldSerializedRange } from '@/lib/highlights/rangeUtils';
 import { createSidenote, getSidenotesForPage, subscribeSidenotes, updateSidenote, deleteSidenote, type FullSidenote } from '@/lib/supabase/sidenotes';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -166,7 +169,7 @@ export function IntegratedTextHighlighter({
   className = ''
 }: IntegratedTextHighlighterProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const [popover, setPopover] = useState<PopoverState>({
     visible: false,
     position: { x: 0, y: 0 },
@@ -214,7 +217,7 @@ export function IntegratedTextHighlighter({
     setSidenotes(data);
   };
 
-  const handleMouseUp = useCallback((event: MouseEvent) => {
+  const handleMouseUp = useCallback(() => {
     if (!containerRef.current) return;
 
     const selection = window.getSelection();
@@ -304,7 +307,7 @@ export function IntegratedTextHighlighter({
     if (!containerRef.current || !sidenote.highlights[0]) return;
 
     const highlight = sidenote.highlights[0];
-    const serializedRange: SerializedRange = {
+    const serializedRange: OldSerializedRange = {
       startContainerPath: highlight.start_container_path,
       startOffset: highlight.start_offset,
       endContainerPath: highlight.end_container_path,
@@ -327,7 +330,7 @@ export function IntegratedTextHighlighter({
       try {
         // Try the simple approach first (works for ranges within a single text node)
         range.surroundContents(highlightSpan);
-      } catch (surroundError) {
+      } catch {
         // Fallback for complex ranges that span multiple nodes
         const contents = range.extractContents();
         highlightSpan.appendChild(contents);

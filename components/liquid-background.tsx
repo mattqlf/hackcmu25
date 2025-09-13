@@ -15,7 +15,6 @@ export function LiquidBackground() {
   const orb2Ref = useRef<HTMLDivElement>(null);
   const orb3Ref = useRef<HTMLDivElement>(null);
   const [ripples, setRipples] = useState<Ripple[]>([]);
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
   const createRipple = useCallback((x: number, y: number) => {
     const newRipple = {
@@ -35,8 +34,6 @@ export function LiquidBackground() {
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      setMousePos({ x: e.clientX, y: e.clientY });
-
       if (cursorFollowerRef.current) {
         cursorFollowerRef.current.style.transform = `translate(${e.clientX - 150}px, ${e.clientY - 150}px)`;
       }

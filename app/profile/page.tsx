@@ -23,16 +23,17 @@ function WelcomeMessage({ searchParams }: { searchParams: { welcome?: string } }
   );
 }
 
-export default function ProfilePage({
+export default async function ProfilePage({
   searchParams,
 }: {
-  searchParams: { welcome?: string };
+  searchParams: Promise<{ welcome?: string }>;
 }) {
+  const resolvedSearchParams = await searchParams;
   return (
     <div className="min-h-screen bg-background p-4">
       <div className="max-w-2xl mx-auto pt-8">
         <Suspense fallback={<div>Loading...</div>}>
-          <WelcomeMessage searchParams={searchParams} />
+          <WelcomeMessage searchParams={resolvedSearchParams} />
         </Suspense>
 
         <UserProfileEditor />

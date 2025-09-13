@@ -2,6 +2,7 @@
 
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { useDispatch } from 'react-redux';
+import type { AppDispatch } from '@/components/providers/SidenotesProvider';
 import { AnchorBase, actions } from 'sidenotes';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -42,141 +43,7 @@ interface PopoverState {
   range: Range | null;
 }
 
-interface SidenoteDisplayProps {
-  sidenote: FullSidenote;
-  onUpdate: (id: string, content: string) => void;
-  onDelete: (id: string) => void;
-  onJumpToHighlight?: (id: string) => void;
-  isSelected?: boolean;
-}
 
-function SidenoteDisplay({ sidenote, onUpdate, onDelete, onJumpToHighlight, isSelected }: SidenoteDisplayProps) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [editContent, setEditContent] = useState(sidenote.content);
-  const [isLoading, setIsLoading] = useState(false);
-
-  const handleSave = async () => {
-    if (editContent.trim() === sidenote.content) {
-      setIsEditing(false);
-      return;
-    }
-
-    setIsLoading(true);
-    const success = await updateSidenote(sidenote.id, editContent.trim());
-
-    if (success) {
-      onUpdate(sidenote.id, editContent.trim());
-      setIsEditing(false);
-    } else {
-      alert('Failed to update note');
-    }
-    setIsLoading(false);
-  };
-
-  const handleDelete = async () => {
-    if (!confirm('Are you sure you want to delete this note?')) {
-      return;
-    }
-
-    setIsLoading(true);
-    const success = await deleteSidenote(sidenote.id);
-
-    if (success) {
-      onDelete(sidenote.id);
-    } else {
-      alert('Failed to delete note');
-    }
-    setIsLoading(false);
-  };
-
-  const handleCancel = () => {
-    setEditContent(sidenote.content);
-    setIsEditing(false);
-  };
-
-  return (
-    <Card
-      className={`p-4 backdrop-blur-sm border mb-2 transition-all duration-200 cursor-pointer hover:shadow-md ${
-        isSelected
-          ? 'bg-primary/5 border-primary/50 shadow-md'
-          : 'bg-background/95 border-border/50 hover:bg-muted/30'
-      }`}
-      onClick={() => onJumpToHighlight?.(sidenote.id)}
-    >
-      <div className="flex justify-between items-start mb-2">
-        <div className="text-xs text-muted-foreground">
-          {new Date(sidenote.created_at).toLocaleDateString()}
-        </div>
-        <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
-          {!isEditing ? (
-            <>
-              <button
-                onClick={() => setIsEditing(true)}
-                className="glass-button-icon-sm text-slate-500 hover:text-slate-700"
-                disabled={isLoading}
-              >
-                <Edit2 className="w-3 h-3" />
-              </button>
-              <button
-                onClick={handleDelete}
-                className="glass-button-icon-sm text-red-500 hover:text-red-700"
-                disabled={isLoading}
-              >
-                <Trash2 className="w-3 h-3" />
-              </button>
-            </>
-          ) : (
-            <>
-              <button
-                onClick={handleSave}
-                className="glass-button-icon-sm text-green-500 hover:text-green-700"
-                disabled={isLoading || !editContent.trim()}
-              >
-                <Save className="w-3 h-3" />
-              </button>
-              <button
-                onClick={handleCancel}
-                className="glass-button-icon-sm text-slate-500 hover:text-slate-700"
-                disabled={isLoading}
-              >
-                <X className="w-3 h-3" />
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-
-      {isEditing ? (
-        <Textarea
-          value={editContent}
-          onChange={(e) => setEditContent(e.target.value)}
-          placeholder="Enter your note..."
-          className="min-h-[60px] text-sm resize-none"
-          disabled={isLoading}
-          autoFocus
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-              handleSave();
-            } else if (e.key === 'Escape') {
-              handleCancel();
-            }
-          }}
-        />
-      ) : (
-        <div className="text-sm whitespace-pre-wrap break-words">
-          {sidenote.content}
-        </div>
-      )}
-
-      {sidenote.highlights[0] && (
-        <div className="mt-2 text-xs text-muted-foreground bg-muted/30 p-2 rounded">
-          <div className="font-medium mb-1">Highlighted text:</div>
-          <div className="italic">&ldquo;{sidenote.highlights[0].highlighted_text}&rdquo;</div>
-        </div>
-      )}
-    </Card>
-  );
-}
 
 export function ModernTextHighlighter({
   children,
@@ -185,7 +52,7 @@ export function ModernTextHighlighter({
   className = ''
 }: ModernTextHighlighterProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const [highlightManager] = useState<HighlightManager>(() => createHighlightManager());
 
   const [popover, setPopover] = useState<PopoverState>({
@@ -301,7 +168,7 @@ export function ModernTextHighlighter({
     setSidenotes(data);
   };
 
-  const handleMouseUp = useCallback((event: MouseEvent) => {
+  const handleMouseUp = useCallback(() => {
     if (!containerRef.current) return;
 
     const selection = window.getSelection();
@@ -324,8 +191,6 @@ export function ModernTextHighlighter({
       return;
     }
 
-    // Check if we're selecting inside an existing highlight (for CSS API this is less relevant)
-    const rangeBounds = getRangeBounds(range);
     const selectionBounds = selection.getRangeAt(0).getBoundingClientRect();
 
     setPopover({
@@ -510,7 +375,6 @@ export function ModernTextHighlighter({
   const handleContainerClick = useCallback((event: React.MouseEvent) => {
     // For CSS Custom Highlight API, we need to detect clicks on highlights differently
     // We'll use elementFromPoint to check if we're clicking on highlighted text
-    const target = event.target as HTMLElement;
     const point = { x: event.clientX, y: event.clientY };
 
     // Check if click is on highlighted text by examining ranges
@@ -586,7 +450,7 @@ export function ModernTextHighlighter({
       <SidenoteSidebarOverlay
         sidenotes={sidenotesWithPositions}
         selectedSidenote={selectedSidenote}
-        currentUserId={currentUserId}
+        currentUserId={currentUserId ?? undefined}
         onUpdate={handleUpdateContent}
         onDelete={handleDeleteSidenote}
         onJumpToHighlight={handleJumpToHighlight}

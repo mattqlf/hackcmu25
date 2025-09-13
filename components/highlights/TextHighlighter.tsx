@@ -2,7 +2,8 @@
 
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { HighlightPopover } from './HighlightPopover';
-import { serializeRange, deserializeRange, getRangeBounds, type SerializedRange } from '@/lib/highlights/rangeUtils';
+import { serializeRange as modernSerializeRange, type SerializedRange } from '@/lib/highlights/modernRangeUtils';
+import { deserializeRange, getRangeBounds, type SerializedRange as OldSerializedRange } from '@/lib/highlights/rangeUtils';
 import { createSidenote, getSidenotesForPage, subscribeSidenotes, type FullSidenote } from '@/lib/supabase/sidenotes';
 
 interface TextHighlighterProps {
@@ -77,7 +78,7 @@ export function TextHighlighter({
     setSidenotes(data);
   };
 
-  const handleMouseUp = useCallback((_event: MouseEvent) => {
+  const handleMouseUp = useCallback(() => {
     if (!containerRef.current) return;
 
     const selection = window.getSelection();
@@ -128,7 +129,7 @@ export function TextHighlighter({
     if (!content) return;
 
     try {
-      const serializedRange = serializeRange(popover.range, containerRef.current);
+      const serializedRange = modernSerializeRange(popover.range, containerRef.current);
       const newSidenote = await createSidenote(content, serializedRange, pageUrl);
 
       if (newSidenote) {
@@ -168,7 +169,7 @@ export function TextHighlighter({
     if (!containerRef.current || !sidenote.highlights[0]) return;
 
     const highlight = sidenote.highlights[0];
-    const serializedRange: SerializedRange = {
+    const serializedRange: OldSerializedRange = {
       startContainerPath: highlight.start_container_path,
       startOffset: highlight.start_offset,
       endContainerPath: highlight.end_container_path,

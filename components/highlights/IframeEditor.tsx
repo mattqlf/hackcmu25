@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { Button } from '@/components/ui/button';
 import { X, GripHorizontal } from 'lucide-react';
 
 interface IframeEditorProps {
@@ -51,7 +50,6 @@ export function IframeEditor({
   const handleDragStart = useCallback((e: React.MouseEvent) => {
     if (modalRef.current) {
       setIsDragging(true);
-      const rect = modalRef.current.getBoundingClientRect();
       dragStartPos.current = {
         x: e.clientX - editorPosition.x,
         y: e.clientY - editorPosition.y

@@ -1,8 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/page-header";
 import { UserProfileEditor } from "@/components/UserProfileEditor";
 import { User, Search, Heart, Eye, ArrowLeft, ExternalLink, Trash2 } from "lucide-react";
@@ -24,7 +22,6 @@ export default function DashboardPage() {
   const [favorites, setFavorites] = useState<FavoritePaper[]>([]);
   const [watchlist, setWatchlist] = useState<WatchlistPaper[]>([]);
   const [searchHistory, setSearchHistory] = useState<SearchHistoryEntry[]>([]);
-  const [loading, setLoading] = useState(false);
 
   const sections = [
     { id: "profile", label: "Profile", icon: User },
@@ -38,7 +35,6 @@ export default function DashboardPage() {
   }, []);
 
   const loadData = async () => {
-    setLoading(true);
     try {
       const [favData, watchData, historyData] = await Promise.all([
         getUserFavorites(),
@@ -50,8 +46,6 @@ export default function DashboardPage() {
       setSearchHistory(historyData);
     } catch (error) {
       console.error('Error loading dashboard data:', error);
-    } finally {
-      setLoading(false);
     }
   };
 

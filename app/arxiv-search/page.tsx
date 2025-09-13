@@ -1,10 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/page-header";
 import { Search, Loader2, Copy, ExternalLink, ChevronDown, ChevronUp, Heart, Eye, HelpCircle } from "lucide-react";
 import Link from "next/link";
@@ -35,7 +32,7 @@ interface SearchResults {
   papers: ArxivPaper[];
 }
 
-export default function ArxivSearchPage() {
+function ArxivSearchContent() {
   const searchParams = useSearchParams();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResults | null>(null);
@@ -519,5 +516,13 @@ export default function ArxivSearchPage() {
 
       </div>
     </main>
+  );
+}
+
+export default function ArxivSearchPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <ArxivSearchContent />
+    </Suspense>
   );
 }

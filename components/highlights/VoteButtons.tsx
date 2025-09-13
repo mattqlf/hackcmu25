@@ -28,8 +28,6 @@ export function VoteButtons({
   const [isLoading, setIsLoading] = useState(false);
 
   // Ensure we have valid numbers
-  const safeUpvotes = upvotes ?? 0;
-  const safeDownvotes = downvotes ?? 0;
   const safeNetVotes = netVotes ?? 0;
 
   const handleVote = async (voteType: -1 | 1) => {

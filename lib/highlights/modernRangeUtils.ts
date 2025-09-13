@@ -265,7 +265,9 @@ function getNodeAndOffsetFromCharacterOffset(container: Element, characterOffset
   );
 
   let currentNode: Node | null;
+  let lastNode: Node | null = null;
   while (currentNode = walker.nextNode()) {
+    lastNode = currentNode;
     const nodeLength = currentNode.textContent?.length || 0;
 
     if (charCount + nodeLength >= characterOffset) {
@@ -280,10 +282,10 @@ function getNodeAndOffsetFromCharacterOffset(container: Element, characterOffset
 
   // If we get here, the offset is beyond the end of the content
   // Return the last text node with its max offset
-  if (currentNode) {
+  if (lastNode) {
     return {
-      node: currentNode,
-      offset: currentNode.textContent?.length || 0
+      node: lastNode,
+      offset: lastNode.textContent?.length || 0
     };
   }
 
@@ -461,7 +463,7 @@ export function isValidRange(range: Range): boolean {
       range.toString().trim().length >= 3 && // Minimum meaningful text
       !range.collapsed
     );
-  } catch (error) {
+  } catch {
     return false;
   }
 }
@@ -494,7 +496,7 @@ export function getRangeBounds(range: Range): DOMRect {
     }
 
     return new DOMRect(minX, minY, maxX - minX, maxY - minY);
-  } catch (error) {
+  } catch {
     return new DOMRect(0, 0, 0, 0);
   }
 }

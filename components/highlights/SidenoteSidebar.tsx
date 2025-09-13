@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { X, Edit2, Save, Trash2, Search, SortAsc, SortDesc, Clock, MapPin, Reply as ReplyIcon, MessageSquare } from 'lucide-react';
-import { FullSidenote, createReply, updateReply, deleteReply, Reply, voteSidenote } from '@/lib/supabase/sidenotes';
+import { FullSidenote, createReply, updateReply, deleteReply, Reply } from '@/lib/supabase/sidenotes';
 import { ReplyCard } from './ReplyCard';
 import { formatDate } from '@/lib/utils/dateFormatter';
 // Import test function to make it available in development
@@ -18,7 +18,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { VoteButtons } from './VoteButtons';
 
 interface SidenoteSidebarProps {
   sidenotes: Array<FullSidenote & { position: number }>;
@@ -119,11 +118,11 @@ function CompactSidenoteCard({
   };
 
   const handleReplyToReply = async (parentReplyId: string, content: string) => {
-    const success = await createReply(sidenote.id, content, parentReplyId);
-    if (success) {
+    const reply = await createReply(sidenote.id, content, parentReplyId);
+    if (reply) {
       onSidenotesUpdate?.();
     }
-    return success;
+    return !!reply;
   };
 
   const handleUpdateReply = async (replyId: string, content: string) => {
