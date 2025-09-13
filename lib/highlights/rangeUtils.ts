@@ -60,15 +60,47 @@ export function deserializeRange(serialized: SerializedRange, container?: Elemen
       return null;
     }
 
-    range.setStart(startNode, serialized.startOffset);
-    range.setEnd(endNode, serialized.endOffset);
+    // Validate offsets before setting range
+    const startNodeLength = startNode.nodeType === Node.TEXT_NODE
+      ? (startNode as Text).length
+      : startNode.childNodes.length;
+    const endNodeLength = endNode.nodeType === Node.TEXT_NODE
+      ? (endNode as Text).length
+      : endNode.childNodes.length;
 
-    // Validate that the range text matches
-    const currentText = range.toString();
-    if (currentText !== serialized.text) {
+    const validStartOffset = Math.min(serialized.startOffset, startNodeLength);
+    const validEndOffset = Math.min(serialized.endOffset, endNodeLength);
+
+    // If offsets had to be adjusted, log a warning
+    if (validStartOffset !== serialized.startOffset || validEndOffset !== serialized.endOffset) {
+      console.warn('Range offsets adjusted due to content changes. Original:',
+        { start: serialized.startOffset, end: serialized.endOffset },
+        'Adjusted:', { start: validStartOffset, end: validEndOffset });
+    }
+
+    range.setStart(startNode, validStartOffset);
+    range.setEnd(endNode, validEndOffset);
+
+    // Validate that the range is meaningful (not empty or too small)
+    const currentText = range.toString().trim();
+    if (currentText.length === 0) {
+      console.warn('Range resulted in empty text, rejecting range');
+      return null;
+    }
+
+    // If the range is very small and doesn't match expected text, it's likely invalid
+    if (currentText.length < 3 && currentText !== serialized.text.trim()) {
+      console.warn('Range resulted in very short text that doesn\'t match expected, rejecting range');
+      return null;
+    }
+
+    // Validate that the range text matches reasonably well
+    if (currentText !== serialized.text.trim()) {
       console.warn('Range text mismatch. Expected:', serialized.text, 'Got:', currentText);
-      // Try to find the text using fuzzy matching
-      return findRangeByText(serialized.text, container || document.body);
+      // Only try fuzzy matching if the text difference is significant
+      if (Math.abs(currentText.length - serialized.text.trim().length) > 10) {
+        return findRangeByText(serialized.text, container || document.body);
+      }
     }
 
     return range;

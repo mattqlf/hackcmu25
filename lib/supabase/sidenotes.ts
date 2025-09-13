@@ -1,5 +1,5 @@
 import { createClient } from './client';
-import type { SerializedRange } from '../highlights/rangeUtils';
+import type { SerializedRange } from '../highlights/modernRangeUtils';
 
 export interface Sidenote {
   id: string;
@@ -57,14 +57,14 @@ export async function createSidenote(
       throw sidenoteError;
     }
 
-    // Create highlight
+    // Create highlight - adapt new format to old database schema
     const { data: highlight, error: highlightError } = await supabase
       .from('highlights')
       .insert({
         sidenote_id: sidenote.id,
-        start_container_path: range.startContainerPath,
+        start_container_path: range.containerSelector || '',
         start_offset: range.startOffset,
-        end_container_path: range.endContainerPath,
+        end_container_path: range.containerSelector || '',
         end_offset: range.endOffset,
         highlighted_text: range.text
       })

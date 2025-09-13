@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { IntegratedTextHighlighter } from './IntegratedTextHighlighter';
+import { ModernTextHighlighter } from './ModernTextHighlighter';
 
 interface SidenoteManagerProps {
   children: React.ReactNode;
@@ -17,14 +17,14 @@ export function SidenoteManager({
   className = ''
 }: SidenoteManagerProps) {
   return (
-    <div className={`max-w-6xl mx-auto ${className}`}>
-      <IntegratedTextHighlighter
+    <div className={className}>
+      <ModernTextHighlighter
         pageUrl={pageUrl}
         docId={docId}
-        className="pr-80" // Leave space for sidenotes
+        className="max-w-4xl mx-auto px-6 py-8" // Centered content with padding
       >
         {children}
-      </IntegratedTextHighlighter>
+      </ModernTextHighlighter>
     </div>
   );
 }

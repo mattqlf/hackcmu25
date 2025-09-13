@@ -1,0 +1,120 @@
+/**
+ * CSS Custom Highlight API styles
+ *
+ * These styles define how highlights appear using the modern CSS Custom Highlight API.
+ * Each highlight is registered with a unique ID and can be styled individually.
+ */
+
+/* Default highlight style for sidenotes */
+::highlight(sidenote-highlights) {
+  background-color: rgba(255, 255, 0, 0.3);
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: rgba(255, 193, 7, 0.8);
+  text-decoration-thickness: 2px;
+  border-radius: 2px;
+}
+
+/* Dark mode adjustments */
+@media (prefers-color-scheme: dark) {
+  ::highlight(sidenote-highlights) {
+    background-color: rgba(255, 193, 7, 0.2);
+    text-decoration-color: rgba(255, 193, 7, 0.6);
+  }
+}
+
+/* Hover effect for highlights */
+::highlight(hover) {
+  background-color: rgba(255, 193, 7, 0.4);
+  text-decoration-color: rgba(255, 193, 7, 1);
+}
+
+/* Selected highlight style */
+::highlight(selected) {
+  background-color: rgba(0, 123, 255, 0.3);
+  text-decoration-color: rgba(0, 123, 255, 0.8);
+}
+
+/* Highlight selection state */
+::highlight(selected-highlight) {
+  background-color: rgba(255, 165, 0, 0.5);
+  text-decoration-color: rgba(255, 165, 0, 1);
+  text-decoration-thickness: 3px;
+}
+
+/* Active highlight while editing */
+::highlight(active) {
+  background-color: rgba(40, 167, 69, 0.3);
+  text-decoration-color: rgba(40, 167, 69, 0.8);
+  text-decoration-style: double;
+}
+
+/* Search result highlight style */
+::highlight(search) {
+  background-color: rgba(255, 106, 106, 0.3);
+  text-decoration-color: rgba(255, 106, 106, 0.8);
+  text-decoration-style: wavy;
+}
+
+/* Fallback styles for browsers without CSS Custom Highlight API support */
+.highlight-fallback {
+  background-color: rgba(255, 255, 0, 0.3);
+  border-radius: 2px;
+  padding: 0 2px;
+  text-decoration: underline;
+  text-decoration-color: rgba(255, 193, 7, 0.8);
+  text-decoration-thickness: 2px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.highlight-fallback:hover {
+  background-color: rgba(255, 193, 7, 0.4);
+}
+
+.highlight-fallback.selected {
+  background-color: rgba(0, 123, 255, 0.3);
+  text-decoration-color: rgba(0, 123, 255, 0.8);
+}
+
+.highlight-fallback.active {
+  background-color: rgba(40, 167, 69, 0.3);
+  text-decoration-color: rgba(40, 167, 69, 0.8);
+  text-decoration-style: double;
+}
+
+/* Dark mode for fallback styles */
+@media (prefers-color-scheme: dark) {
+  .highlight-fallback {
+    background-color: rgba(255, 193, 7, 0.2);
+    text-decoration-color: rgba(255, 193, 7, 0.6);
+  }
+
+  .highlight-fallback:hover {
+    background-color: rgba(255, 193, 7, 0.3);
+  }
+
+  .highlight-fallback.selected {
+    background-color: rgba(0, 123, 255, 0.2);
+    text-decoration-color: rgba(0, 123, 255, 0.6);
+  }
+
+  .highlight-fallback.active {
+    background-color: rgba(40, 167, 69, 0.2);
+    text-decoration-color: rgba(40, 167, 69, 0.6);
+  }
+
+  .highlight-fallback.highlight-selected {
+    background-color: rgba(255, 165, 0, 0.5);
+    text-decoration-color: rgba(255, 165, 0, 1);
+    text-decoration-thickness: 3px;
+  }
+}
+
+/* Utility classes for sidebar */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}

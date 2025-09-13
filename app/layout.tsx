@@ -4,6 +4,7 @@ import { ThemeProvider } from "next-themes";
 import { SidenotesProvider } from "@/components/providers/SidenotesProvider";
 import "./globals.css";
 import "sidenotes/dist/sidenotes.css";
+import "@/styles/highlights.css";
 
 const defaultUrl = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`
