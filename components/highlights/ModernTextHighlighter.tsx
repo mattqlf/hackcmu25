@@ -22,6 +22,7 @@ import {
   deleteSidenote,
   type FullSidenote
 } from '@/lib/supabase/sidenotes';
+import { createClient } from '@/lib/supabase/client';
 import '@/styles/highlights.css';
 
 interface ModernTextHighlighterProps {
@@ -199,8 +200,19 @@ export function ModernTextHighlighter({
 
   const [sidenotes, setSidenotes] = useState<FullSidenote[]>([]);
   const [selectedSidenote, setSelectedSidenote] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [highlightRanges, setHighlightRanges] = useState<Map<string, Range>>(new Map());
   const [sidenotesWithPositions, setSidenotesWithPositions] = useState<Array<FullSidenote & { position: number }>>([]);
+
+  // Get current user
+  useEffect(() => {
+    const getCurrentUser = async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      setCurrentUserId(user?.id || null);
+    };
+    getCurrentUser();
+  }, []);
 
   // Load existing sidenotes on mount
   useEffect(() => {
@@ -555,9 +567,11 @@ export function ModernTextHighlighter({
       <SidenoteSidebar
         sidenotes={sidenotesWithPositions}
         selectedSidenote={selectedSidenote}
+        currentUserId={currentUserId}
         onUpdate={handleUpdateContent}
         onDelete={handleDeleteSidenote}
         onJumpToHighlight={handleJumpToHighlight}
+        onSidenotesUpdate={loadSidenotes}
       />
     </div>
   );

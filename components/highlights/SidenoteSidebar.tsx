@@ -5,8 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { X, Edit2, Save, Trash2, Search, SortAsc, SortDesc, Clock, MapPin } from 'lucide-react';
-import { FullSidenote } from '@/lib/supabase/sidenotes';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { X, Edit2, Save, Trash2, Search, SortAsc, SortDesc, Clock, MapPin, Reply as ReplyIcon, MessageSquare } from 'lucide-react';
+import { FullSidenote, createReply, updateReply, deleteReply, Reply } from '@/lib/supabase/sidenotes';
+import { ReplyCard } from './ReplyCard';
+import { formatDate } from '@/lib/utils/dateFormatter';
+// Import test function to make it available in development
+import '@/lib/utils/timezoneTest';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,16 +22,20 @@ import {
 interface SidenoteSidebarProps {
   sidenotes: Array<FullSidenote & { position: number }>;
   selectedSidenote: string | null;
+  currentUserId?: string;
   onUpdate: (id: string, content: string) => Promise<boolean>;
   onDelete: (id: string) => Promise<boolean>;
   onJumpToHighlight: (id: string) => void;
+  onSidenotesUpdate?: () => void;
 }
 
 interface CompactSidenoteCardProps {
   sidenote: FullSidenote & { position: number };
+  currentUserId?: string;
   onUpdate: (id: string, content: string) => Promise<boolean>;
   onDelete: (id: string) => Promise<boolean>;
   onJumpToHighlight: (id: string) => void;
+  onSidenotesUpdate?: () => void;
   isSelected: boolean;
 }
 
@@ -34,14 +43,27 @@ type SortOption = 'time-newest' | 'time-oldest' | 'location-top' | 'location-bot
 
 function CompactSidenoteCard({
   sidenote,
+  currentUserId,
   onUpdate,
   onDelete,
   onJumpToHighlight,
+  onSidenotesUpdate,
   isSelected
 }: CompactSidenoteCardProps) {
   const [isEditing, setIsEditing] = useState(false);
+  const [isReplying, setIsReplying] = useState(false);
+  const [showReplies, setShowReplies] = useState(false);
   const [editContent, setEditContent] = useState(sidenote.content);
+  const [replyContent, setReplyContent] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  const totalReplies = countTotalReplies(sidenote.replies || []);
+
+  function countTotalReplies(replies: Reply[]): number {
+    return replies.reduce((count, reply) => {
+      return count + 1 + countTotalReplies(reply.replies || []);
+    }, 0);
+  }
 
   const handleSave = async () => {
     if (editContent.trim() === sidenote.content) {
@@ -78,19 +100,57 @@ function CompactSidenoteCard({
     setIsEditing(false);
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInHours = Math.abs(now.getTime() - date.getTime()) / (1000 * 60 * 60);
+  const handleReply = async () => {
+    if (!replyContent.trim()) return;
 
-    if (diffInHours < 24) {
-      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    } else if (diffInHours < 24 * 7) {
-      return date.toLocaleDateString([], { weekday: 'short', hour: '2-digit', minute: '2-digit' });
+    setIsLoading(true);
+    const success = await createReply(sidenote.id, replyContent.trim());
+
+    if (success) {
+      setIsReplying(false);
+      setReplyContent('');
+      setShowReplies(true);
+      onSidenotesUpdate?.();
     } else {
-      return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+      alert('Failed to add reply');
     }
+    setIsLoading(false);
   };
+
+  const handleReplyToReply = async (parentReplyId: string, content: string) => {
+    const success = await createReply(sidenote.id, content, parentReplyId);
+    if (success) {
+      onSidenotesUpdate?.();
+    }
+    return success;
+  };
+
+  const handleUpdateReply = async (replyId: string, content: string) => {
+    const success = await updateReply(replyId, content);
+    if (success) {
+      onSidenotesUpdate?.();
+    }
+    return success;
+  };
+
+  const handleDeleteReply = async (replyId: string) => {
+    const success = await deleteReply(replyId);
+    if (success) {
+      onSidenotesUpdate?.();
+    }
+    return success;
+  };
+
+  const handleReplyCancel = () => {
+    setReplyContent('');
+    setIsReplying(false);
+  };
+
+  const getInitials = (name?: string | null) => {
+    if (!name) return '?';
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  };
+
 
   return (
     <Card
@@ -101,55 +161,75 @@ function CompactSidenoteCard({
       }`}
       onClick={() => onJumpToHighlight(sidenote.id)}
     >
-      {/* Header with timestamp and actions */}
-      <div className="flex justify-between items-center mb-2">
-        <div className="text-xs text-muted-foreground font-medium">
-          {formatDate(sidenote.created_at)}
-        </div>
-        <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
-          {!isEditing ? (
-            <>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => setIsEditing(true)}
-                className="h-5 w-5 p-0 opacity-60 hover:opacity-100"
-                disabled={isLoading}
-              >
-                <Edit2 className="w-3 h-3" />
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={handleDelete}
-                className="h-5 w-5 p-0 opacity-60 hover:opacity-100 text-destructive"
-                disabled={isLoading}
-              >
-                <Trash2 className="w-3 h-3" />
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={handleSave}
-                className="h-5 w-5 p-0"
-                disabled={isLoading || !editContent.trim()}
-              >
-                <Save className="w-3 h-3" />
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={handleCancel}
-                className="h-5 w-5 p-0"
-                disabled={isLoading}
-              >
-                <X className="w-3 h-3" />
-              </Button>
-            </>
-          )}
+      {/* Header with user info and timestamp */}
+      <div className="flex items-start gap-2 mb-3">
+        <Avatar className="w-6 h-6 flex-shrink-0">
+          <AvatarImage src={sidenote.user_profile?.avatar_url || undefined} />
+          <AvatarFallback className="text-xs bg-primary/10 text-primary">
+            {getInitials(sidenote.user_profile?.full_name)}
+          </AvatarFallback>
+        </Avatar>
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-foreground">
+                {sidenote.user_profile?.full_name || 'Anonymous'}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {formatDate(sidenote.created_at)}
+              </span>
+              {sidenote.created_at !== sidenote.updated_at && (
+                <span className="text-xs text-muted-foreground italic">edited</span>
+              )}
+            </div>
+
+            <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+              {!isEditing && currentUserId === sidenote.user_id ? (
+                <>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setIsEditing(true)}
+                    className="h-5 w-5 p-0 opacity-60 hover:opacity-100"
+                    disabled={isLoading}
+                  >
+                    <Edit2 className="w-3 h-3" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={handleDelete}
+                    className="h-5 w-5 p-0 opacity-60 hover:opacity-100 text-destructive"
+                    disabled={isLoading}
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </Button>
+                </>
+              ) : isEditing ? (
+                <>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={handleSave}
+                    className="h-5 w-5 p-0"
+                    disabled={isLoading || !editContent.trim()}
+                  >
+                    <Save className="w-3 h-3" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={handleCancel}
+                    className="h-5 w-5 p-0"
+                    disabled={isLoading}
+                  >
+                    <X className="w-3 h-3" />
+                  </Button>
+                </>
+              ) : null}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -181,8 +261,94 @@ function CompactSidenoteCard({
       {sidenote.highlights[0] && (
         <div className="mt-2 text-xs text-muted-foreground bg-muted/20 p-2 rounded border-l-2 border-primary/30">
           <div className="italic line-clamp-2">
-            &ldquo;{sidenote.highlights[0].highlighted_text}&rdquo;
+&ldquo;{sidenote.highlights[0].highlighted_text}&rdquo;
           </div>
+        </div>
+      )}
+
+      {/* Reply Actions */}
+      {!isEditing && (
+        <div className="mt-3 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => setIsReplying(true)}
+            className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
+            disabled={isLoading}
+          >
+            <ReplyIcon className="w-3 h-3 mr-1" />
+            Reply
+          </Button>
+
+          {totalReplies > 0 && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setShowReplies(!showReplies)}
+              className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
+              disabled={isLoading}
+            >
+              <MessageSquare className="w-3 h-3 mr-1" />
+              {totalReplies} {totalReplies === 1 ? 'reply' : 'replies'}
+            </Button>
+          )}
+        </div>
+      )}
+
+      {/* Reply Form */}
+      {isReplying && (
+        <div className="mt-3" onClick={(e) => e.stopPropagation()}>
+          <Textarea
+            value={replyContent}
+            onChange={(e) => setReplyContent(e.target.value)}
+            placeholder="Write a reply..."
+            className="min-h-[60px] text-sm resize-none"
+            disabled={isLoading}
+            autoFocus
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                handleReply();
+              } else if (e.key === 'Escape') {
+                handleReplyCancel();
+              }
+            }}
+          />
+          <div className="flex gap-2 mt-2">
+            <Button
+              size="sm"
+              onClick={handleReply}
+              disabled={isLoading || !replyContent.trim()}
+              className="h-7"
+            >
+              Reply
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={handleReplyCancel}
+              disabled={isLoading}
+              className="h-7"
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Replies Section */}
+      {showReplies && sidenote.replies && sidenote.replies.length > 0 && (
+        <div className="mt-3 border-t border-border/30 pt-3" onClick={(e) => e.stopPropagation()}>
+          {sidenote.replies.map((reply) => (
+            <ReplyCard
+              key={reply.id}
+              reply={reply}
+              depth={0}
+              currentUserId={currentUserId}
+              onReply={handleReplyToReply}
+              onUpdate={handleUpdateReply}
+              onDelete={handleDeleteReply}
+            />
+          ))}
         </div>
       )}
     </Card>
@@ -192,9 +358,11 @@ function CompactSidenoteCard({
 export function SidenoteSidebar({
   sidenotes,
   selectedSidenote,
+  currentUserId,
   onUpdate,
   onDelete,
-  onJumpToHighlight
+  onJumpToHighlight,
+  onSidenotesUpdate
 }: SidenoteSidebarProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOption, setSortOption] = useState<SortOption>('location-top');
@@ -329,9 +497,11 @@ export function SidenoteSidebar({
             <CompactSidenoteCard
               key={sidenote.id}
               sidenote={sidenote}
+              currentUserId={currentUserId}
               onUpdate={onUpdate}
               onDelete={onDelete}
               onJumpToHighlight={onJumpToHighlight}
+              onSidenotesUpdate={onSidenotesUpdate}
               isSelected={selectedSidenote === sidenote.id}
             />
           ))
