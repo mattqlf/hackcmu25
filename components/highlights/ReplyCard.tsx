@@ -1,12 +1,12 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Edit2, Save, Trash2, Reply as ReplyIcon, MoreVertical } from 'lucide-react';
 import { Reply } from '@/lib/supabase/sidenotes';
 import { formatDate } from '@/lib/utils/dateFormatter';
+import { renderContent } from '@/lib/utils/latexRenderer';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -145,59 +145,53 @@ export function ReplyCard({
                 }}
               />
               <div className="flex gap-2 mt-2">
-                <Button
-                  size="sm"
+                <button
                   onClick={handleSave}
                   disabled={isLoading || !editContent.trim()}
-                  className="h-7"
+                  className="glass-button-sm"
                 >
                   <Save className="w-3 h-3 mr-1" />
                   Save
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
+                </button>
+                <button
                   onClick={handleCancel}
                   disabled={isLoading}
-                  className="h-7"
+                  className="glass-button-sm text-slate-600 hover:text-slate-800"
                 >
                   Cancel
-                </Button>
+                </button>
               </div>
             </div>
           ) : (
-            <div className="text-sm text-foreground leading-relaxed mb-2 whitespace-pre-wrap break-words">
-              {reply.content}
-            </div>
+            <div
+              className="text-sm text-foreground leading-relaxed mb-2 whitespace-pre-wrap break-words"
+              dangerouslySetInnerHTML={{ __html: renderContent(reply.content) }}
+            />
           )}
 
           {/* Reply Actions */}
           {!isEditing && (
             <div className="flex items-center gap-2 mb-3">
               {canReply && (
-                <Button
-                  size="sm"
-                  variant="ghost"
+                <button
                   onClick={() => setIsReplying(true)}
-                  className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
+                  className="glass-button-sm text-slate-600 hover:text-slate-800"
                   disabled={isLoading}
                 >
                   <ReplyIcon className="w-3 h-3 mr-1" />
                   Reply
-                </Button>
+                </button>
               )}
 
               {isOwner && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-6 px-1 text-muted-foreground hover:text-foreground"
+                    <button
+                      className="glass-button-icon-sm text-slate-500 hover:text-slate-700"
                       disabled={isLoading}
                     >
                       <MoreVertical className="w-3 h-3" />
-                    </Button>
+                    </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start">
                     <DropdownMenuItem onClick={() => setIsEditing(true)}>
@@ -233,23 +227,20 @@ export function ReplyCard({
                 }}
               />
               <div className="flex gap-2 mt-2">
-                <Button
-                  size="sm"
+                <button
                   onClick={handleReply}
                   disabled={isLoading || !replyContent.trim()}
-                  className="h-7"
+                  className="glass-button-sm"
                 >
                   Reply
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
+                </button>
+                <button
                   onClick={handleReplyCancel}
                   disabled={isLoading}
-                  className="h-7"
+                  className="glass-button-sm text-slate-600 hover:text-slate-800"
                 >
                   Cancel
-                </Button>
+                </button>
               </div>
             </div>
           )}

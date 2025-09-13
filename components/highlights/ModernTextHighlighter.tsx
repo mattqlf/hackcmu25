@@ -3,8 +3,12 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { useDispatch } from 'react-redux';
 import { AnchorBase, actions } from 'sidenotes';
+import { Card } from '@/components/ui/card';
+import { Textarea } from '@/components/ui/textarea';
+import { Edit2, Trash2, Save, X } from 'lucide-react';
 import { HighlightPopover } from './HighlightPopover';
-import { SidenoteSidebar } from './SidenoteSidebar';
+import { SidenoteSidebarOverlay } from './SidenoteSidebarOverlay';
+import { MinimalEditor } from './MinimalEditor';
 import {
   serializeRange,
   deserializeRange,
@@ -106,45 +110,37 @@ function SidenoteDisplay({ sidenote, onUpdate, onDelete, onJumpToHighlight, isSe
         <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
           {!isEditing ? (
             <>
-              <Button
-                size="sm"
-                variant="ghost"
+              <button
                 onClick={() => setIsEditing(true)}
-                className="h-6 w-6 p-0"
+                className="glass-button-icon-sm text-slate-500 hover:text-slate-700"
                 disabled={isLoading}
               >
                 <Edit2 className="w-3 h-3" />
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
+              </button>
+              <button
                 onClick={handleDelete}
-                className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                className="glass-button-icon-sm text-red-500 hover:text-red-700"
                 disabled={isLoading}
               >
                 <Trash2 className="w-3 h-3" />
-              </Button>
+              </button>
             </>
           ) : (
             <>
-              <Button
-                size="sm"
-                variant="ghost"
+              <button
                 onClick={handleSave}
-                className="h-6 w-6 p-0"
+                className="glass-button-icon-sm text-green-500 hover:text-green-700"
                 disabled={isLoading || !editContent.trim()}
               >
                 <Save className="w-3 h-3" />
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
+              </button>
+              <button
                 onClick={handleCancel}
-                className="h-6 w-6 p-0"
+                className="glass-button-icon-sm text-slate-500 hover:text-slate-700"
                 disabled={isLoading}
               >
                 <X className="w-3 h-3" />
-              </Button>
+              </button>
             </>
           )}
         </div>
@@ -203,6 +199,9 @@ export function ModernTextHighlighter({
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [highlightRanges, setHighlightRanges] = useState<Map<string, Range>>(new Map());
   const [sidenotesWithPositions, setSidenotesWithPositions] = useState<Array<FullSidenote & { position: number }>>([]);
+  const [forceSidebarOpen, setForceSidebarOpen] = useState(false);
+  const [minimalEditorOpen, setMinimalEditorOpen] = useState(false);
+  const [editingRange, setEditingRange] = useState<Range | null>(null);
 
   // Get current user
   useEffect(() => {
@@ -342,12 +341,20 @@ export function ModernTextHighlighter({
   const handleAddNote = async () => {
     if (!popover.range || !containerRef.current) return;
 
-    const content = prompt('Enter your note:');
-    if (!content) return;
+    // Store the range and open minimal editor
+    setEditingRange(popover.range.cloneRange());
+    setMinimalEditorOpen(true);
+
+    // Hide the popover
+    setPopover(prev => ({ ...prev, visible: false }));
+  };
+
+  const handleSaveNote = async (content: string) => {
+    if (!editingRange || !containerRef.current || !content.trim()) return;
 
     try {
-      const serializedRange = serializeRange(popover.range, containerRef.current);
-      const newSidenote = await createSidenote(content, serializedRange, pageUrl);
+      const serializedRange = serializeRange(editingRange, containerRef.current);
+      const newSidenote = await createSidenote(content.trim(), serializedRange, pageUrl);
 
       if (newSidenote) {
         // Immediately add to state and render highlight (don't wait for real-time subscription)
@@ -361,6 +368,7 @@ export function ModernTextHighlighter({
 
         // Clear selection
         window.getSelection()?.removeAllRanges();
+        setEditingRange(null);
       } else {
         alert('Failed to create sidenote. Please try again.');
       }
@@ -433,10 +441,19 @@ export function ModernTextHighlighter({
     highlightManager.setSelectedHighlight(newSelection);
 
     if (newSelection) {
+      // Force open the sidebar when a highlight is clicked
+      setForceSidebarOpen(true);
       dispatch(actions.selectAnchor(docId, sidenoteId));
     } else {
       dispatch(actions.deselectSidenote(docId));
     }
+  };
+
+  const handleSidebarClose = () => {
+    setForceSidebarOpen(false);
+    setSelectedSidenote(null);
+    highlightManager.setSelectedHighlight(null);
+    dispatch(actions.deselectSidenote(docId));
   };
 
   const handleUpdateContent = async (id: string, content: string): Promise<boolean> => {
@@ -517,6 +534,10 @@ export function ModernTextHighlighter({
       handleHighlightClick(clickedHighlight);
     } else {
       handleDeselectSidenotes();
+      // Also close the sidebar when clicking on content area
+      if (forceSidebarOpen) {
+        handleSidebarClose();
+      }
     }
   }, [highlightRanges]);
 
@@ -539,32 +560,30 @@ export function ModernTextHighlighter({
   }, [highlightManager]);
 
   return (
-    <div className="flex h-screen">
+    <div className="relative w-full">
       {/* Main content area */}
-      <div className="flex-1 overflow-auto">
-        <article id={docId} className={`relative ${className}`}>
-          <AnchorBase anchor="base">
-            <div
-              ref={containerRef}
-              className="relative"
-              style={{ userSelect: 'text' }}
-              onClick={handleContainerClick}
-            >
-              {children}
-            </div>
-          </AnchorBase>
-        </article>
+      <article id={docId} className={`relative ${className}`}>
+        <AnchorBase anchor="base">
+          <div
+            ref={containerRef}
+            className="relative"
+            style={{ userSelect: 'text' }}
+            onClick={handleContainerClick}
+          >
+            {children}
+          </div>
+        </AnchorBase>
+      </article>
 
-        <HighlightPopover
-          visible={popover.visible}
-          position={popover.position}
-          onAddNote={handleAddNote}
-          onClose={() => setPopover(prev => ({ ...prev, visible: false }))}
-        />
-      </div>
+      <HighlightPopover
+        visible={popover.visible}
+        position={popover.position}
+        onAddNote={handleAddNote}
+        onClose={() => setPopover(prev => ({ ...prev, visible: false }))}
+      />
 
-      {/* New organized sidebar */}
-      <SidenoteSidebar
+      {/* New overlay sidebar */}
+      <SidenoteSidebarOverlay
         sidenotes={sidenotesWithPositions}
         selectedSidenote={selectedSidenote}
         currentUserId={currentUserId}
@@ -572,6 +591,19 @@ export function ModernTextHighlighter({
         onDelete={handleDeleteSidenote}
         onJumpToHighlight={handleJumpToHighlight}
         onSidenotesUpdate={loadSidenotes}
+        forceOpen={forceSidebarOpen}
+        onClose={handleSidebarClose}
+      />
+
+      <MinimalEditor
+        isOpen={minimalEditorOpen}
+        onClose={() => {
+          setMinimalEditorOpen(false);
+          setEditingRange(null);
+        }}
+        onSave={handleSaveNote}
+        title="Add Note"
+        placeholder="Write your note here..."
       />
     </div>
   );

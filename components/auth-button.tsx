@@ -6,17 +6,30 @@ import { LogoutButton } from "./logout-button";
 export async function AuthButton() {
   const supabase = await createClient();
 
-  // You can also use getUser() which will be slower.
-  const { data } = await supabase.auth.getClaims();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  const user = data?.claims;
+  if (user) {
+    // Try to get user profile for full name
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('full_name')
+      .eq('id', user.id)
+      .single();
 
-  return user ? (
-    <div className="flex items-center gap-4">
-      Hey, {user.email}!
-      <LogoutButton />
-    </div>
-  ) : (
+    const displayName = profile?.full_name || user.email?.split('@')[0] || 'User';
+
+    return (
+      <div className="flex items-center gap-4">
+        <span className="text-sm">Hello, {displayName}!</span>
+        <LogoutButton />
+        <Button asChild size="sm" variant="outline">
+          <Link href="/dashboard">Dashboard</Link>
+        </Button>
+      </div>
+    );
+  }
+
+  return (
     <div className="flex gap-2">
       <Button asChild size="sm" variant={"outline"}>
         <Link href="/auth/login">Sign in</Link>

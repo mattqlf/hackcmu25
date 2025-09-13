@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
-import { ThemeProvider } from "next-themes";
 import { SidenotesProvider } from "@/components/providers/SidenotesProvider";
 import "./globals.css";
 import "sidenotes/dist/sidenotes.css";
@@ -28,18 +27,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en">
       <body className={`${geistSans.className} antialiased`}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <SidenotesProvider>
-            {children}
-          </SidenotesProvider>
-        </ThemeProvider>
+        <SidenotesProvider>
+          {children}
+        </SidenotesProvider>
       </body>
     </html>
   );

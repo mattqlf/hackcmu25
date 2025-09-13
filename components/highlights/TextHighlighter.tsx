@@ -183,7 +183,7 @@ export function TextHighlighter({
     try {
       // Create highlight wrapper
       const highlightSpan = document.createElement('span');
-      highlightSpan.className = 'text-highlight bg-yellow-200 dark:bg-yellow-800 cursor-pointer rounded-sm px-1 transition-colors hover:bg-yellow-300 dark:hover:bg-yellow-700';
+      highlightSpan.className = 'text-highlight bg-yellow-200 cursor-pointer rounded-sm px-1 transition-colors hover:bg-yellow-300';
       highlightSpan.setAttribute('data-sidenote-id', sidenote.id);
       highlightSpan.title = `Note: ${sidenote.content}`;
 

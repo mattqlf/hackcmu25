@@ -1,60 +1,45 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&family=JetBrains+Mono:wght@100;200;300;400;500;600;700;800&family=SF+Pro+Display:wght@100;200;300;400;500;600;700;800;900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
+    --background: 210 20% 98%;
+    --foreground: 222 84% 4.9%;
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
+    --card-foreground: 222 84% 4.9%;
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
+    --popover-foreground: 222 84% 4.9%;
+    --primary: 222 47% 11%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 84% 4.9%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222 84% 4.9%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 222 47% 11%;
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
-    --radius: 0.5rem;
-  }
-  .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    --radius: 0.75rem;
+
+    /* Perfect Glass Variables */
+    --glass-bg: rgba(255, 255, 255, 0.25);
+    --glass-border: rgba(255, 255, 255, 0.4);
+    --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.12);
+    --backdrop-blur: blur(16px);
+    --glass-strong-bg: rgba(255, 255, 255, 0.4);
+    --glass-strong-border: rgba(255, 255, 255, 0.6);
+    --glass-strong-shadow: 0 20px 80px 0 rgba(31, 38, 135, 0.18);
   }
 }
 
@@ -64,5 +49,415 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', system-ui, sans-serif;
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #cbd5e1 100%);
+    background-attachment: fixed;
+    min-height: 100vh;
+  }
+}
+
+/* Custom animations */
+@keyframes gentle-flash {
+  0% {
+    background-color: hsl(var(--background));
+    border-color: hsl(var(--border));
+  }
+  50% {
+    background-color: rgb(239 246 255);
+    border-color: rgb(191 219 254);
+  }
+  100% {
+    background-color: hsl(var(--background));
+    border-color: hsl(var(--border));
+  }
+}
+
+.gentle-flash {
+  animation: gentle-flash 1s ease-in-out;
+}
+
+/* ArXiv Paper Styling */
+.paper-content {
+  background: #ffffff;
+  min-height: 100vh;
+}
+
+.arxiv-paper-content {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
+  background: #ffffff;
+  color: #000000;
+  font-family: 'Computer Modern', 'Latin Modern', 'Times New Roman', serif;
+  line-height: 1.6;
+}
+
+.arxiv-paper-content h1,
+.arxiv-paper-content h2,
+.arxiv-paper-content h3,
+.arxiv-paper-content h4,
+.arxiv-paper-content h5,
+.arxiv-paper-content h6 {
+  color: #000000;
+  font-weight: bold;
+  margin-top: 1.5em;
+  margin-bottom: 0.75em;
+}
+
+.arxiv-paper-content h1 {
+  font-size: 1.5em;
+  text-align: center;
+  margin-bottom: 1em;
+}
+
+.arxiv-paper-content h2 {
+  font-size: 1.2em;
+}
+
+.arxiv-paper-content h3 {
+  font-size: 1.1em;
+}
+
+.arxiv-paper-content p {
+  margin-bottom: 1em;
+  text-align: justify;
+  text-justify: inter-word;
+}
+
+.arxiv-paper-content .abstract {
+  background: #f8f9fa;
+  padding: 1rem;
+  border: 1px solid #e9ecef;
+  margin: 1.5em 0;
+  border-radius: 0.25rem;
+}
+
+.arxiv-paper-content .abstract h2,
+.arxiv-paper-content .abstract h3 {
+  margin-top: 0;
+  font-size: 1em;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.arxiv-paper-content .authors {
+  text-align: center;
+  margin: 1em 0 2em 0;
+  font-style: italic;
+}
+
+.arxiv-paper-content .affiliation {
+  text-align: center;
+  font-size: 0.9em;
+  margin-bottom: 1em;
+}
+
+.arxiv-paper-content a {
+  color: #0066cc;
+  text-decoration: none;
+}
+
+.arxiv-paper-content a:hover {
+  text-decoration: underline;
+}
+
+.arxiv-paper-content .math,
+.arxiv-paper-content .MathJax {
+  font-family: 'Computer Modern', 'Latin Modern Math', serif;
+}
+
+.arxiv-paper-content figure {
+  margin: 1.5em 0;
+  text-align: center;
+}
+
+.arxiv-paper-content img {
+  max-width: 100%;
+  height: auto;
+  border: 1px solid #ddd;
+  border-radius: 0.25rem;
+}
+
+.arxiv-paper-content .caption {
+  font-size: 0.9em;
+  margin-top: 0.5em;
+  font-style: italic;
+  text-align: center;
+}
+
+.arxiv-paper-content .bibliography {
+  margin-top: 2em;
+  border-top: 1px solid #eee;
+  padding-top: 1em;
+}
+
+.arxiv-paper-content .bibliography h2 {
+  font-size: 1.1em;
+  margin-bottom: 1em;
+}
+
+.arxiv-paper-content .bibitem {
+  margin-bottom: 0.5em;
+  padding-left: 2em;
+  text-indent: -2em;
+}
+
+
+/* Vertical text for minimized sidebar */
+.writing-mode-vertical {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+}
+
+/* Scrollbar styling for sidebar */
+.sidebar-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 3px;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--border) / 0.8);
+}
+
+/* Perfect Glass UI Components */
+@layer components {
+  .glass-card {
+    background: var(--glass-bg);
+    backdrop-filter: var(--backdrop-blur);
+    -webkit-backdrop-filter: var(--backdrop-blur);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius);
+    box-shadow: var(--glass-shadow),
+                inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .glass-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent);
+    border-radius: var(--radius) var(--radius) 0 0;
+  }
+
+  .glass-card-strong {
+    background: var(--glass-strong-bg);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid var(--glass-strong-border);
+    border-radius: var(--radius);
+    box-shadow: var(--glass-strong-shadow),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    position: relative;
+  }
+
+  .glass-card-strong::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.9), transparent);
+    border-radius: var(--radius) var(--radius) 0 0;
+  }
+
+  .glass-button {
+    @apply glass-card hover:bg-white/40 transition-all duration-200 ease-out;
+    color: #1e293b;
+    font-weight: 500;
+    letter-spacing: -0.015em;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.1);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .glass-button:hover {
+    color: #0f172a;
+  }
+
+  .glass-input {
+    @apply glass-card bg-white/20 border-white/40 placeholder:text-slate-500 text-slate-900;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .glass-input:focus {
+    @apply ring-2 ring-slate-400/30 border-white/60 bg-white/30;
+    outline: none;
+  }
+
+  .modern-text {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', system-ui, sans-serif;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+    line-height: 1.5;
+  }
+
+  .modern-heading {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', system-ui, sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    line-height: 1.3;
+  }
+
+  .liquid-container {
+    @apply glass-card-strong p-6;
+    position: relative;
+    overflow: hidden;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .centered-container {
+    @apply glass-card-strong p-8;
+    position: relative;
+    overflow: hidden;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    max-width: fit-content;
+  }
+
+  /* Icon Container Utilities */
+  .icon-container {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .icon-container-sm {
+    @apply icon-container;
+    width: 2rem;
+    height: 2rem;
+  }
+
+  .icon-container-md {
+    @apply icon-container;
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+
+  .icon-container-lg {
+    @apply icon-container;
+    width: 3rem;
+    height: 3rem;
+  }
+
+  /* Button Variants */
+  .glass-button-sm {
+    @apply glass-button;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.875rem;
+    height: 2rem;
+    min-width: 2rem;
+  }
+
+  .glass-button-md {
+    @apply glass-button;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    height: 2.5rem;
+    min-width: 2.5rem;
+  }
+
+  .glass-button-lg {
+    @apply glass-button;
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    height: 3rem;
+    min-width: 3rem;
+  }
+
+  .glass-button-icon {
+    @apply glass-button;
+    padding: 0;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+  }
+
+  .glass-button-icon-sm {
+    @apply glass-button;
+    padding: 0;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+  }
+
+  .glass-button-icon-lg {
+    @apply glass-button;
+    padding: 0;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 50%;
+  }
+
+  /* Consistent spacing and typography */
+  .section-header {
+    @apply modern-heading text-2xl font-bold text-slate-900 mb-6;
+  }
+
+  .section-subheader {
+    @apply modern-heading text-lg font-semibold text-slate-900 mb-4;
+  }
+
+  .body-text {
+    @apply modern-text text-slate-700 leading-relaxed;
+  }
+
+  .body-text-muted {
+    @apply modern-text text-slate-600;
+  }
+
+  .body-text-light {
+    @apply modern-text text-slate-500;
+  }
+
+  /* Math rendering styles */
+  .math-display {
+    display: block;
+    text-align: center;
+    margin: 1em 0;
+    padding: 0.5em;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.375rem;
+    font-family: 'Computer Modern', 'Times New Roman', serif;
+    font-style: italic;
+    color: #1e293b;
+  }
+
+  .math-inline {
+    font-family: 'Computer Modern', 'Times New Roman', serif;
+    font-style: italic;
+    color: #374151;
+    background: #f1f5f9;
+    padding: 0.125rem 0.25rem;
+    border-radius: 0.25rem;
   }
 }

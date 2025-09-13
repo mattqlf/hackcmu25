@@ -10,9 +10,9 @@ export interface SerializedRange {
   id: string;
   /** Selected text content */
   text: string;
-  /** Start position in normalized text */
+  /** Start character position in container */
   startOffset: number;
-  /** End position in normalized text */
+  /** End character position in container */
   endOffset: number;
   /** Context around selection for better matching */
   beforeContext: string;
@@ -144,7 +144,7 @@ class DOMHighlightManager implements HighlightManager {
     try {
       const contents = range.extractContents();
       const highlightSpan = document.createElement('span');
-      highlightSpan.className = `highlight-${id} bg-yellow-200 dark:bg-yellow-800 rounded-sm px-1`;
+      highlightSpan.className = `highlight-${id} bg-yellow-200 rounded-sm px-1`;
       highlightSpan.setAttribute('data-highlight-id', id);
       highlightSpan.appendChild(contents);
       range.insertNode(highlightSpan);
@@ -206,130 +206,113 @@ class DOMHighlightManager implements HighlightManager {
 }
 
 /**
- * Get text content with normalized whitespace for consistent positioning
+ * Calculate character position of a node/offset within a container
+ * Uses character counting approach similar to Rangy
  */
-function getNormalizedText(container: Element): string {
-  return container.textContent?.replace(/\s+/g, ' ').trim() || '';
+function getCharacterOffsetWithin(container: Element, node: Node, offset: number): number {
+  let charCount = 0;
+  const walker = document.createTreeWalker(
+    container,
+    NodeFilter.SHOW_TEXT,
+    {
+      acceptNode: (textNode) => {
+        // Skip script and style content
+        const parent = textNode.parentElement;
+        if (parent) {
+          const tagName = parent.tagName.toLowerCase();
+          if (tagName === 'script' || tagName === 'style') {
+            return NodeFilter.FILTER_REJECT;
+          }
+        }
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    }
+  );
+
+  let currentNode: Node | null;
+  while (currentNode = walker.nextNode()) {
+    if (currentNode === node) {
+      return charCount + offset;
+    }
+    charCount += currentNode.textContent?.length || 0;
+  }
+
+  return charCount;
 }
 
 /**
- * Find text position in normalized content
+ * Convert character offset back to node/offset position
+ * Uses character counting approach similar to Rangy
  */
-function findTextPosition(text: string, normalizedContent: string, beforeContext: string, afterContext: string): { start: number; end: number } | null {
-  // First try exact match
-  let startPos = normalizedContent.indexOf(text);
-
-  if (startPos !== -1) {
-    return { start: startPos, end: startPos + text.length };
-  }
-
-  // Try with context
-  const contextPattern = beforeContext + text + afterContext;
-  const contextMatch = normalizedContent.indexOf(contextPattern);
-
-  if (contextMatch !== -1) {
-    return {
-      start: contextMatch + beforeContext.length,
-      end: contextMatch + beforeContext.length + text.length
-    };
-  }
-
-  // Fuzzy matching for similar text
-  const words = text.split(/\s+/);
-  if (words.length > 1) {
-    // Try finding by first and last words
-    const firstWord = words[0];
-    const lastWord = words[words.length - 1];
-
-    const firstIndex = normalizedContent.indexOf(firstWord);
-    const lastIndex = normalizedContent.indexOf(lastWord, firstIndex);
-
-    if (firstIndex !== -1 && lastIndex !== -1) {
-      return { start: firstIndex, end: lastIndex + lastWord.length };
+function getNodeAndOffsetFromCharacterOffset(container: Element, characterOffset: number): { node: Node; offset: number } | null {
+  let charCount = 0;
+  const walker = document.createTreeWalker(
+    container,
+    NodeFilter.SHOW_TEXT,
+    {
+      acceptNode: (textNode) => {
+        // Skip script and style content
+        const parent = textNode.parentElement;
+        if (parent) {
+          const tagName = parent.tagName.toLowerCase();
+          if (tagName === 'script' || tagName === 'style') {
+            return NodeFilter.FILTER_REJECT;
+          }
+        }
+        return NodeFilter.FILTER_ACCEPT;
+      }
     }
+  );
+
+  let currentNode: Node | null;
+  while (currentNode = walker.nextNode()) {
+    const nodeLength = currentNode.textContent?.length || 0;
+
+    if (charCount + nodeLength >= characterOffset) {
+      return {
+        node: currentNode,
+        offset: characterOffset - charCount
+      };
+    }
+
+    charCount += nodeLength;
+  }
+
+  // If we get here, the offset is beyond the end of the content
+  // Return the last text node with its max offset
+  if (currentNode) {
+    return {
+      node: currentNode,
+      offset: currentNode.textContent?.length || 0
+    };
   }
 
   return null;
 }
 
-/**
- * Convert text position back to DOM Range
- */
-function textPositionToRange(container: Element, startPos: number, endPos: number): Range | null {
-  const walker = document.createTreeWalker(
-    container,
-    NodeFilter.SHOW_TEXT,
-    null
-  );
-
-  let currentPos = 0;
-  let startNode: Node | null = null;
-  let startOffset = 0;
-  let endNode: Node | null = null;
-  let endOffset = 0;
-
-  let node: Node | null;
-  while (node = walker.nextNode()) {
-    const textContent = node.textContent || '';
-    const normalizedText = textContent.replace(/\s+/g, ' ');
-    const nodeLength = normalizedText.length;
-
-    if (!startNode && currentPos + nodeLength > startPos) {
-      startNode = node;
-      startOffset = Math.min(startPos - currentPos, textContent.length);
-    }
-
-    if (currentPos + nodeLength >= endPos) {
-      endNode = node;
-      endOffset = Math.min(endPos - currentPos, textContent.length);
-      break;
-    }
-
-    currentPos += nodeLength + (nodeLength > 0 ? 1 : 0); // Add space between nodes
-  }
-
-  if (!startNode || !endNode) {
-    return null;
-  }
-
-  try {
-    const range = document.createRange();
-    range.setStart(startNode, Math.max(0, startOffset));
-    range.setEnd(endNode, Math.max(0, endOffset));
-
-    // Validate range has content
-    if (range.toString().trim().length === 0) {
-      return null;
-    }
-
-    return range;
-  } catch (error) {
-    console.error('Error creating range:', error);
-    return null;
-  }
-}
 
 /**
- * Serialize a Range to a robust format
+ * Serialize a Range to a robust format using character-based positioning
  */
 export function serializeRange(range: Range, container: Element): SerializedRange {
-  const text = range.toString().replace(/\s+/g, ' ').trim();
-  const normalizedContent = getNormalizedText(container);
+  // Preserve original text as selected by user
+  const originalText = range.toString();
 
-  // Find position in normalized content
-  const startPos = normalizedContent.indexOf(text);
-  const endPos = startPos + text.length;
+  // Calculate character positions within the container
+  const startOffset = getCharacterOffsetWithin(container, range.startContainer, range.startOffset);
+  const endOffset = getCharacterOffsetWithin(container, range.endContainer, range.endOffset);
 
-  // Get context for better matching
+  // Get context by extracting text around the positions
+  const fullText = getTextContent(container);
   const contextLength = 50;
-  const beforeContext = normalizedContent.substring(Math.max(0, startPos - contextLength), startPos);
-  const afterContext = normalizedContent.substring(endPos, Math.min(normalizedContent.length, endPos + contextLength));
+  const beforeContext = fullText.substring(Math.max(0, startOffset - contextLength), startOffset);
+  const afterContext = fullText.substring(endOffset, Math.min(fullText.length, endOffset + contextLength));
 
   return {
     id: generateHighlightId(),
-    text,
-    startOffset: startPos,
-    endOffset: endPos,
+    text: originalText,
+    startOffset,
+    endOffset,
     beforeContext,
     afterContext,
     containerSelector: container.id ? `#${container.id}` : container.tagName.toLowerCase()
@@ -337,25 +320,113 @@ export function serializeRange(range: Range, container: Element): SerializedRang
 }
 
 /**
- * Deserialize to a Range object
+ * Get plain text content from container (for context generation)
  */
-export function deserializeRange(serialized: SerializedRange, container: Element): Range | null {
-  const normalizedContent = getNormalizedText(container);
-
-  // Find text position using context
-  const position = findTextPosition(
-    serialized.text,
-    normalizedContent,
-    serialized.beforeContext,
-    serialized.afterContext
+function getTextContent(container: Element): string {
+  const walker = document.createTreeWalker(
+    container,
+    NodeFilter.SHOW_TEXT,
+    {
+      acceptNode: (textNode) => {
+        // Skip script and style content
+        const parent = textNode.parentElement;
+        if (parent) {
+          const tagName = parent.tagName.toLowerCase();
+          if (tagName === 'script' || tagName === 'style') {
+            return NodeFilter.FILTER_REJECT;
+          }
+        }
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    }
   );
 
-  if (!position) {
-    console.warn('Could not find text position for:', serialized.text);
-    return null;
+  let text = '';
+  let node: Node | null;
+  while (node = walker.nextNode()) {
+    text += node.textContent || '';
   }
 
-  return textPositionToRange(container, position.start, position.end);
+  return text;
+}
+
+
+/**
+ * Deserialize to a Range object using character-based positioning
+ */
+export function deserializeRange(serialized: SerializedRange, container: Element): Range | null {
+  // Try direct character position restoration first
+  const startResult = getNodeAndOffsetFromCharacterOffset(container, serialized.startOffset);
+  const endResult = getNodeAndOffsetFromCharacterOffset(container, serialized.endOffset);
+
+  if (startResult && endResult) {
+    try {
+      const range = document.createRange();
+      range.setStart(startResult.node, startResult.offset);
+      range.setEnd(endResult.node, endResult.offset);
+
+      // Verify the range makes sense
+      if (range.toString().trim().length > 0) {
+        return range;
+      }
+    } catch (error) {
+      console.warn('Error creating range from character offsets:', error);
+    }
+  }
+
+  // Fallback: try to find by text content and context
+  const fullText = getTextContent(container);
+  const targetText = serialized.text;
+
+  // Look for the text using context
+  let searchText = serialized.beforeContext + targetText + serialized.afterContext;
+  let searchIndex = fullText.indexOf(searchText);
+
+  if (searchIndex !== -1) {
+    const adjustedStart = searchIndex + serialized.beforeContext.length;
+    const adjustedEnd = adjustedStart + targetText.length;
+
+    const fallbackStart = getNodeAndOffsetFromCharacterOffset(container, adjustedStart);
+    const fallbackEnd = getNodeAndOffsetFromCharacterOffset(container, adjustedEnd);
+
+    if (fallbackStart && fallbackEnd) {
+      try {
+        const range = document.createRange();
+        range.setStart(fallbackStart.node, fallbackStart.offset);
+        range.setEnd(fallbackEnd.node, fallbackEnd.offset);
+
+        if (range.toString().trim().length > 0) {
+          return range;
+        }
+      } catch (error) {
+        console.warn('Error creating fallback range:', error);
+      }
+    }
+  }
+
+  // Final fallback: try to find just the target text
+  const directIndex = fullText.indexOf(targetText);
+  if (directIndex !== -1) {
+    const finalStart = getNodeAndOffsetFromCharacterOffset(container, directIndex);
+    const finalEnd = getNodeAndOffsetFromCharacterOffset(container, directIndex + targetText.length);
+
+    if (finalStart && finalEnd) {
+      try {
+        const range = document.createRange();
+        range.setStart(finalStart.node, finalStart.offset);
+        range.setEnd(finalEnd.node, finalEnd.offset);
+
+        if (range.toString().trim().length > 0) {
+          return range;
+        }
+      } catch (error) {
+        console.warn('Error creating final fallback range:', error);
+      }
+    }
+  }
+
+  console.warn('Could not deserialize range for text:', serialized.text);
+  return null;
 }
 
 /**

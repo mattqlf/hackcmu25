@@ -19,19 +19,8 @@ export async function GET(request: NextRequest) {
     });
     if (!error) {
       // Check if this is a new user without a complete profile
-      try {
-        const profile = await getUserProfile();
-        if (!profile || !profile.full_name) {
-          // New user or incomplete profile - redirect to profile setup
-          redirect('/profile?welcome=true');
-        } else {
-          // Existing user with complete profile
-          redirect(next);
-        }
-      } catch (error) {
-        // If there's an error checking profile, redirect to profile setup to be safe
-        redirect('/profile?welcome=true');
-      }
+      // Always redirect to arxiv-search after email confirmation
+      redirect('/arxiv-search');
     } else {
       // redirect the user to an error page with some instructions
       redirect(`/auth/error?error=${error?.message}`);

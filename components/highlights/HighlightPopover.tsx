@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { MessageSquarePlus, X } from 'lucide-react';
 
@@ -79,25 +78,22 @@ export function HighlightPopover({ position, onAddNote, onClose, visible }: High
     >
       <Card className="p-3 shadow-lg border bg-background/95 backdrop-blur-sm">
         <div className="flex items-center gap-2">
-          <Button
-            size="sm"
+          <button
             onClick={() => {
               onAddNote();
               onClose();
             }}
-            className="flex items-center gap-2 text-sm"
+            className="glass-button-sm flex items-center gap-2"
           >
             <MessageSquarePlus className="w-4 h-4" />
             Add Note
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
+          </button>
+          <button
             onClick={onClose}
-            className="p-1 h-8 w-8"
+            className="glass-button-icon-sm text-slate-500 hover:text-slate-700"
           >
             <X className="w-4 h-4" />
-          </Button>
+          </button>
         </div>
       </Card>
       {/* Arrow pointing to selection */}

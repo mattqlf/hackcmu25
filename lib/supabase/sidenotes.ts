@@ -74,9 +74,11 @@ export async function createSidenote(
     // Check if user profile exists, create if not
     const { data: existingProfile, error: profileCheckError } = await supabase
       .from('user_profiles')
-      .select('id')
+      .select('id, full_name, avatar_url')
       .eq('id', user.id)
       .single();
+
+    let userProfile = existingProfile;
 
     if (profileCheckError && profileCheckError.code !== 'PGRST116') {
       console.error('Error checking user profile:', profileCheckError);
@@ -84,17 +86,26 @@ export async function createSidenote(
 
     if (!existingProfile) {
       console.log('Creating user profile for:', user.id);
-      const { error: profileCreateError } = await supabase
+      const { data: newProfile, error: profileCreateError } = await supabase
         .from('user_profiles')
         .insert({
           id: user.id,
           email: user.email,
-          full_name: user.user_metadata?.full_name || null
-        });
+          full_name: user.user_metadata?.full_name || user.user_metadata?.name || null
+        })
+        .select('id, full_name, avatar_url')
+        .single();
 
       if (profileCreateError) {
         console.error('Error creating user profile:', profileCreateError);
-        // Continue anyway, profile is not required for sidenote creation
+        // Use fallback profile data
+        userProfile = {
+          id: user.id,
+          full_name: user.user_metadata?.full_name || user.user_metadata?.name || `User ${user.id.substring(0, 8)}`,
+          avatar_url: null
+        };
+      } else {
+        userProfile = newProfile;
       }
     }
 
@@ -151,21 +162,14 @@ export async function createSidenote(
 
     console.log('Highlight created successfully:', highlight.id);
 
-    // Get user profile for the created sidenote
-    const { data: profileData, error: profileError } = await supabase
-      .from('user_profiles')
-      .select('full_name, avatar_url')
-      .eq('id', sidenote.user_id)
-      .single();
-
-    if (profileError) {
-      console.error('Error fetching user profile for new sidenote:', profileError);
-    }
 
     return {
       ...sidenote,
       highlights: [highlight],
-      user_profile: profileData || null,
+      user_profile: userProfile ? {
+        full_name: userProfile.full_name,
+        avatar_url: userProfile.avatar_url
+      } : null,
       replies: []
     };
   } catch (error) {
@@ -217,6 +221,21 @@ export async function getSidenotesForPage(pageUrl: string): Promise<FullSidenote
     (profilesData || []).forEach(profile => {
       profilesMap.set(profile.id, profile);
     });
+
+    // For any missing profiles, add placeholder entries so we don't show 'Anonymous'
+    const missingUserIds = userIds.filter(id => !profilesMap.has(id));
+    if (missingUserIds.length > 0) {
+      console.warn('Missing user profiles for:', missingUserIds);
+
+      // Add fallback profile data for missing users
+      missingUserIds.forEach(userId => {
+        profilesMap.set(userId, {
+          id: userId,
+          full_name: `User ${userId.substring(0, 8)}`, // Show partial ID instead of Anonymous
+          avatar_url: null
+        });
+      });
+    }
 
     // Combine sidenotes with user profiles and replies
     const sidenotesWithReplies = await Promise.all(
@@ -388,7 +407,10 @@ async function getSidenoteById(id: string): Promise<FullSidenote | null> {
 
     return {
       ...sidenoteData,
-      user_profile: profileData || null,
+      user_profile: profileData || {
+        full_name: `User ${sidenoteData.user_id.substring(0, 8)}`,
+        avatar_url: null
+      },
       replies: replies
     };
   } catch (error) {
@@ -437,9 +459,27 @@ export async function getRepliesForSidenote(sidenoteId: string): Promise<Reply[]
       profilesMap.set(profile.id, profile);
     });
 
+    // For any missing reply author profiles, add placeholder entries
+    const missingReplyUserIds = userIds.filter(id => !profilesMap.has(id));
+    if (missingReplyUserIds.length > 0) {
+      console.warn('Missing reply author profiles for:', missingReplyUserIds);
+
+      // Add fallback profile data for missing reply authors
+      missingReplyUserIds.forEach(userId => {
+        profilesMap.set(userId, {
+          id: userId,
+          full_name: `User ${userId.substring(0, 8)}`, // Show partial ID instead of Anonymous
+          avatar_url: null
+        });
+      });
+    }
+
     const repliesWithProfile = repliesData.map(reply => ({
       ...reply,
-      user_profile: profilesMap.get(reply.user_id) || null
+      user_profile: profilesMap.get(reply.user_id) || {
+        full_name: `User ${reply.user_id.substring(0, 8)}`,
+        avatar_url: null
+      }
     }));
 
     return buildReplyTree(repliesWithProfile);
@@ -521,9 +561,21 @@ export async function createReply(
       console.error('Error fetching user profile:', profileError);
     }
 
+    const { data: sidenoteData, error: sidenoteError } = await supabase
+      .from('sidenotes')
+      .select('page_url')
+      .eq('id', sidenoteId)
+      .single();
+
+    if (!sidenoteError && sidenoteData) {
+    }
+
     return {
       ...replyData,
-      user_profile: profileData || null,
+      user_profile: profileData || {
+        full_name: user.user_metadata?.full_name || user.user_metadata?.name || `User ${user.id.substring(0, 8)}`,
+        avatar_url: null
+      },
       replies: []
     };
   } catch (error) {

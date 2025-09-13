@@ -169,33 +169,27 @@ export function UserProfileEditor({ onClose, onSave }: UserProfileEditorProps) {
 
   if (isLoading) {
     return (
-      <Card className="w-full max-w-md mx-auto">
-        <CardContent className="flex items-center justify-center p-8">
-          <div className="text-sm text-muted-foreground">Loading profile...</div>
-        </CardContent>
-      </Card>
+      <div className="centered-container">
+        <div className="body-text-muted">Loading profile...</div>
+      </div>
     );
   }
 
   return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardHeader className="pb-4">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">Edit Profile</CardTitle>
-          {onClose && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onClose}
-              className="h-8 w-8 p-0"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
-      </CardHeader>
+    <div className="liquid-container max-w-md mx-auto">
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="section-subheader mb-0">Edit Profile</h3>
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="glass-button-icon-sm text-slate-500 hover:text-slate-700"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
+      </div>
 
-      <CardContent className="space-y-6">
+      <div className="space-y-6">
         {/* Avatar Section */}
         <div className="flex flex-col items-center space-y-4">
           <Avatar className="h-20 w-20">
@@ -206,13 +200,13 @@ export function UserProfileEditor({ onClose, onSave }: UserProfileEditorProps) {
           </Avatar>
 
           <div>
-            <Label
+            <label
               htmlFor="avatar-upload"
-              className="cursor-pointer inline-flex items-center gap-2 px-3 py-2 text-sm border rounded-md hover:bg-muted transition-colors"
+              className="glass-button-sm cursor-pointer"
             >
-              <Upload className="h-4 w-4" />
+              <Upload className="h-4 w-4 mr-2" />
               Upload Photo
-            </Label>
+            </label>
             <Input
               id="avatar-upload"
               type="file"
@@ -220,7 +214,7 @@ export function UserProfileEditor({ onClose, onSave }: UserProfileEditorProps) {
               onChange={handleAvatarChange}
               className="hidden"
             />
-            <p className="text-xs text-muted-foreground mt-1 text-center">
+            <p className="body-text-light text-xs mt-2 text-center">
               Max 2MB. JPG, PNG, or GIF.
             </p>
           </div>
@@ -228,38 +222,39 @@ export function UserProfileEditor({ onClose, onSave }: UserProfileEditorProps) {
 
         {/* Full Name Field */}
         <div className="space-y-2">
-          <Label htmlFor="fullName">Full Name</Label>
+          <Label htmlFor="fullName" className="body-text font-medium">Full Name</Label>
           <Input
             id="fullName"
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
             placeholder="Enter your full name"
             disabled={isSaving}
+            className="glass-input"
           />
         </div>
 
         {/* Action Buttons */}
         <div className="flex gap-3 pt-2">
-          <Button
+          <button
             onClick={handleSave}
             disabled={isSaving || !fullName.trim()}
-            className="flex-1"
+            className="glass-button-md flex-1"
           >
             <Save className="h-4 w-4 mr-2" />
             {isSaving ? 'Saving...' : 'Save Profile'}
-          </Button>
+          </button>
 
           {onClose && (
-            <Button
-              variant="outline"
+            <button
               onClick={onClose}
               disabled={isSaving}
+              className="glass-button-md text-slate-600 hover:text-slate-800"
             >
               Cancel
-            </Button>
+            </button>
           )}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
