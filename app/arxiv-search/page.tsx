@@ -214,7 +214,7 @@ export default function ArxivSearchPage() {
             Discover Research
           </h1>
           <p className="modern-text text-xl text-slate-700 mb-8 max-w-2xl mx-auto">
-            Search millions of academic papers with our AI-powered discovery platform
+            Search millions of research papers. Powered by ArXiv API. 
           </p>
 
           <form onSubmit={handleSearch} className="max-w-3xl mx-auto mb-6">

@@ -4,6 +4,7 @@ import { SidenotesProvider } from "@/components/providers/SidenotesProvider";
 import "./globals.css";
 import "sidenotes/dist/sidenotes.css";
 import "@/styles/highlights.css";
+import "@/lib/utils/votingDebug";
 
 const defaultUrl = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`
@@ -11,8 +12,11 @@ const defaultUrl = process.env.VERCEL_URL
 
 export const metadata: Metadata = {
   metadataBase: new URL(defaultUrl),
-  title: "Next.js and Supabase Starter Kit",
-  description: "The fastest way to build apps with Next.js and Supabase",
+  title: "PaperSync",
+  description: "Collaborative document editing and synchronization platform",
+  icons: {
+    icon: "/favicon.ico",
+  },
 };
 
 const geistSans = Geist({

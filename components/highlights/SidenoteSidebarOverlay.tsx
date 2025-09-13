@@ -23,7 +23,7 @@ import {
   ChevronLeft,
   GripVertical
 } from 'lucide-react';
-import { FullSidenote, createReply, updateReply, deleteReply, Reply } from '@/lib/supabase/sidenotes';
+import { FullSidenote, createReply, updateReply, deleteReply, Reply, voteSidenote, getUserVoteOnSidenote } from '@/lib/supabase/sidenotes';
 import { ReplyCard } from './ReplyCard';
 import { formatDate } from '@/lib/utils/dateFormatter';
 import { renderContent } from '@/lib/utils/latexRenderer';
@@ -34,6 +34,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { MinimalEditor } from './MinimalEditor';
+import { VoteButtons } from './VoteButtons';
 
 interface SidenoteSidebarOverlayProps {
   sidenotes: Array<FullSidenote & { position: number }>;
@@ -72,7 +73,8 @@ function CompactSidenoteCard({
 }: CompactSidenoteCardProps) {
   const [showReplies, setShowReplies] = useState(false);
   const [minimalEditorOpen, setMinimalEditorOpen] = useState(false);
-  const [minimalReplyOpen, setMinimalReplyOpen] = useState(false);
+  const [isReplying, setIsReplying] = useState(false);
+  const [replyContent, setReplyContent] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const totalReplies = countTotalReplies(sidenote.replies || []);
@@ -137,20 +139,42 @@ function CompactSidenoteCard({
     setIsLoading(false);
   };
 
-  const handleIframeReply = async (content: string) => {
-    if (!content.trim()) return;
+  const handleReply = async () => {
+    if (!replyContent.trim()) return;
 
     setIsLoading(true);
-    const success = await createReply(sidenote.id, content.trim());
+    const success = await createReply(sidenote.id, replyContent.trim());
 
     if (success) {
-      setMinimalReplyOpen(false);
+      setIsReplying(false);
+      setReplyContent('');
       setShowReplies(true);
       onSidenotesUpdate?.();
     } else {
       alert('Failed to add reply');
     }
     setIsLoading(false);
+  };
+
+  const handleReplyCancel = () => {
+    setReplyContent('');
+    setIsReplying(false);
+  };
+
+  const handleVote = async (voteType: -1 | 1) => {
+    setIsLoading(true);
+    try {
+      const success = await voteSidenote(sidenote.id, voteType);
+      if (success) {
+        // Force a refresh of sidenotes to get updated vote counts
+        onSidenotesUpdate?.();
+      } else {
+        alert('Failed to vote. Please try again.');
+      }
+      return success;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const getInitials = (name?: string | null) => {
@@ -231,29 +255,85 @@ function CompactSidenoteCard({
         </div>
       )}
 
-      {/* Reply Actions */}
-        <div className="mt-3 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-          <button
-            onClick={() => setMinimalReplyOpen(true)}
-            className="glass-button-sm text-slate-600 hover:text-slate-800"
-            disabled={isLoading}
-          >
-            <ReplyIcon className="w-3 h-3 mr-1" />
-            Reply
-          </button>
-
-          {totalReplies > 0 && (
+      {/* Actions */}
+        <div className="mt-3 flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center gap-2">
             <button
-              onClick={() => setShowReplies(!showReplies)}
+              onClick={() => setIsReplying(true)}
               className="glass-button-sm text-slate-600 hover:text-slate-800"
               disabled={isLoading}
             >
-              <MessageSquare className="w-3 h-3 mr-1" />
-              {totalReplies} {totalReplies === 1 ? 'reply' : 'replies'}
+              <ReplyIcon className="w-3 h-3 mr-1" />
+              Reply
             </button>
+
+            {totalReplies > 0 && (
+              <button
+                onClick={() => setShowReplies(!showReplies)}
+                className="glass-button-sm text-slate-600 hover:text-slate-800"
+                disabled={isLoading}
+              >
+                <MessageSquare className="w-3 h-3 mr-1" />
+                {totalReplies} {totalReplies === 1 ? 'reply' : 'replies'}
+              </button>
+            )}
+          </div>
+
+          {/* Vote Buttons - only show if vote columns exist */}
+          {(sidenote.upvotes !== undefined || sidenote.net_votes !== undefined) ? (
+            <VoteButtons
+              upvotes={sidenote.upvotes || 0}
+              downvotes={sidenote.downvotes || 0}
+              netVotes={sidenote.net_votes || 0}
+              userVote={sidenote.user_vote}
+              onVote={handleVote}
+              disabled={isLoading}
+              size="sm"
+              orientation="horizontal"
+            />
+          ) : (
+            <div className="text-xs text-slate-500 bg-yellow-100 px-2 py-1 rounded">
+              Run migration to enable voting
+            </div>
           )}
         </div>
 
+      {/* Simple Reply Form */}
+      {isReplying && (
+        <div className="mt-3" onClick={(e) => e.stopPropagation()}>
+          <Textarea
+            value={replyContent}
+            onChange={(e) => setReplyContent(e.target.value)}
+            placeholder="Write a reply..."
+            className="min-h-[60px] text-sm resize-none"
+            disabled={isLoading}
+            autoFocus
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                handleReply();
+              } else if (e.key === 'Escape') {
+                handleReplyCancel();
+              }
+            }}
+          />
+          <div className="flex gap-2 mt-2">
+            <button
+              onClick={handleReply}
+              disabled={isLoading || !replyContent.trim()}
+              className="glass-button-sm"
+            >
+              Reply
+            </button>
+            <button
+              onClick={handleReplyCancel}
+              disabled={isLoading}
+              className="glass-button-sm text-slate-600 hover:text-slate-800"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Replies Section with scrollable container */}
       {showReplies && sidenote.replies && sidenote.replies.length > 0 && (
@@ -267,6 +347,7 @@ function CompactSidenoteCard({
               onReply={handleReplyToReply}
               onUpdate={handleUpdateReply}
               onDelete={handleDeleteReply}
+              onVoteUpdate={onSidenotesUpdate}
             />
           ))}
         </div>
@@ -282,14 +363,6 @@ function CompactSidenoteCard({
         placeholder="Edit your note..."
       />
 
-      {/* Iframe Editor for replying */}
-      <MinimalEditor
-        isOpen={minimalReplyOpen}
-        onClose={() => setMinimalReplyOpen(false)}
-        onSave={handleIframeReply}
-        title="Reply"
-        placeholder="Write your reply..."
-      />
     </Card>
   );
 }

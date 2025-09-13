@@ -13,7 +13,7 @@ export default function Home() {
       <section className="flex-1 flex items-center justify-center py-20 px-4 relative">
         <div className="max-w-4xl mx-auto text-center relative z-10">
           <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-foreground mb-6 bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text">
-            ArXivDocs
+            PaperSync
           </h1>
           <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-2xl mx-auto font-medium">
             Bringing collaboration to paper reading.

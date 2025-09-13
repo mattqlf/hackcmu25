@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Edit2, Save, Trash2, Reply as ReplyIcon, MoreVertical } from 'lucide-react';
-import { Reply } from '@/lib/supabase/sidenotes';
+import { Reply, voteReply } from '@/lib/supabase/sidenotes';
 import { formatDate } from '@/lib/utils/dateFormatter';
 import { renderContent } from '@/lib/utils/latexRenderer';
 import {
@@ -13,6 +13,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { VoteButtons } from './VoteButtons';
 
 interface ReplyCardProps {
   reply: Reply;
@@ -21,6 +22,7 @@ interface ReplyCardProps {
   onReply: (parentReplyId: string, content: string) => Promise<boolean>;
   onUpdate: (replyId: string, content: string) => Promise<boolean>;
   onDelete: (replyId: string) => Promise<boolean>;
+  onVoteUpdate?: () => void;
 }
 
 export function ReplyCard({
@@ -29,7 +31,8 @@ export function ReplyCard({
   currentUserId,
   onReply,
   onUpdate,
-  onDelete
+  onDelete,
+  onVoteUpdate
 }: ReplyCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [isReplying, setIsReplying] = useState(false);
@@ -95,6 +98,22 @@ export function ReplyCard({
   const handleReplyCancel = () => {
     setReplyContent('');
     setIsReplying(false);
+  };
+
+  const handleVote = async (voteType: -1 | 1) => {
+    setIsLoading(true);
+    try {
+      const success = await voteReply(reply.id, voteType);
+      if (success) {
+        // Call the parent update callback
+        onVoteUpdate?.();
+      } else {
+        alert('Failed to vote. Please try again.');
+      }
+      return success;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const getInitials = (name?: string | null) => {
@@ -171,7 +190,8 @@ export function ReplyCard({
 
           {/* Reply Actions */}
           {!isEditing && (
-            <div className="flex items-center gap-2 mb-3">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
               {canReply && (
                 <button
                   onClick={() => setIsReplying(true)}
@@ -204,6 +224,25 @@ export function ReplyCard({
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
+              )}
+              </div>
+
+              {/* Vote Buttons - only show if vote columns exist */}
+              {(reply.upvotes !== undefined || reply.net_votes !== undefined) ? (
+                <VoteButtons
+                  upvotes={reply.upvotes || 0}
+                  downvotes={reply.downvotes || 0}
+                  netVotes={reply.net_votes || 0}
+                  userVote={reply.user_vote}
+                  onVote={handleVote}
+                  disabled={isLoading}
+                  size="sm"
+                  orientation="horizontal"
+                />
+              ) : (
+                <div className="text-xs text-slate-500 bg-yellow-100 px-1 py-0.5 rounded">
+                  Migration needed
+                </div>
               )}
             </div>
           )}
@@ -259,6 +298,7 @@ export function ReplyCard({
               onReply={onReply}
               onUpdate={onUpdate}
               onDelete={onDelete}
+              onVoteUpdate={onVoteUpdate}
             />
           ))}
         </div>

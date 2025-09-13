@@ -105,7 +105,7 @@ export async function GET(request: NextRequest) {
     const response = await fetch(apiUrl, {
       method: "GET",
       headers: {
-        "User-Agent": "ArXivDocs/1.0 (mailto:support@arxivdocs.com)",
+        "User-Agent": "PaperSync/1.0 (mailto:support@papersync.com)",
       },
     });
 

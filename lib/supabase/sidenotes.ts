@@ -8,6 +8,9 @@ export interface Sidenote {
   content: string;
   created_at: string;
   updated_at: string;
+  upvotes: number;
+  downvotes: number;
+  net_votes: number;
 }
 
 export interface Highlight {
@@ -29,11 +32,25 @@ export interface Reply {
   content: string;
   created_at: string;
   updated_at: string;
+  upvotes: number;
+  downvotes: number;
+  net_votes: number;
   user_profile?: {
     full_name: string | null;
     avatar_url: string | null;
   };
   replies?: Reply[];
+  user_vote?: Vote | null; // Current user's vote on this reply
+}
+
+export interface Vote {
+  id: string;
+  user_id: string;
+  sidenote_id: string | null;
+  reply_id: string | null;
+  vote_type: -1 | 1; // -1 for downvote, 1 for upvote
+  created_at: string;
+  updated_at: string;
 }
 
 export interface FullSidenote extends Sidenote {
@@ -43,6 +60,7 @@ export interface FullSidenote extends Sidenote {
     avatar_url: string | null;
   };
   replies?: Reply[];
+  user_vote?: Vote | null; // Current user's vote on this sidenote
 }
 
 /**
@@ -238,6 +256,27 @@ export async function getSidenotesForPage(pageUrl: string): Promise<FullSidenote
     }
 
     // Combine sidenotes with user profiles and replies
+    // Get current user's votes on all sidenotes
+    const { data: { user } } = await supabase.auth.getUser();
+    let userVotes: Map<string, any> = new Map();
+
+    if (user) {
+      const sidenoteIds = sidenotesData.map(s => s.id);
+      const { data: votesData } = await supabase
+        .from('votes')
+        .select('*')
+        .eq('user_id', user.id)
+        .in('sidenote_id', sidenoteIds);
+
+      if (votesData) {
+        votesData.forEach(vote => {
+          if (vote.sidenote_id) {
+            userVotes.set(vote.sidenote_id, vote);
+          }
+        });
+      }
+    }
+
     const sidenotesWithReplies = await Promise.all(
       sidenotesData.map(async (sidenote) => {
         const replies = await getRepliesForSidenote(sidenote.id);
@@ -249,7 +288,8 @@ export async function getSidenotesForPage(pageUrl: string): Promise<FullSidenote
             full_name: userProfile.full_name,
             avatar_url: userProfile.avatar_url
           } : null,
-          replies: replies
+          replies: replies,
+          user_vote: userVotes.get(sidenote.id) || null
         };
       })
     );
@@ -474,18 +514,224 @@ export async function getRepliesForSidenote(sidenoteId: string): Promise<Reply[]
       });
     }
 
+    // Get current user's votes on all replies
+    const { data: { user } } = await supabase.auth.getUser();
+    let userVotesOnReplies: Map<string, any> = new Map();
+
+    if (user && repliesData.length > 0) {
+      const replyIds = repliesData.map(r => r.id);
+      const { data: votesData } = await supabase
+        .from('votes')
+        .select('*')
+        .eq('user_id', user.id)
+        .in('reply_id', replyIds);
+
+      if (votesData) {
+        votesData.forEach(vote => {
+          if (vote.reply_id) {
+            userVotesOnReplies.set(vote.reply_id, vote);
+          }
+        });
+      }
+    }
+
     const repliesWithProfile = repliesData.map(reply => ({
       ...reply,
       user_profile: profilesMap.get(reply.user_id) || {
         full_name: `User ${reply.user_id.substring(0, 8)}`,
         avatar_url: null
-      }
+      },
+      user_vote: userVotesOnReplies.get(reply.id) || null
     }));
 
     return buildReplyTree(repliesWithProfile);
   } catch (error) {
     console.error('Error fetching replies:', error);
     return [];
+  }
+}
+
+/**
+ * Vote on a sidenote
+ */
+export async function voteSidenote(sidenoteId: string, voteType: -1 | 1): Promise<boolean> {
+  try {
+    const supabase = createClient();
+
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      throw new Error('User not authenticated');
+    }
+
+    // Check if user already has a vote
+    const { data: existingVote, error: checkError } = await supabase
+      .from('votes')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('sidenote_id', sidenoteId)
+      .maybeSingle();
+
+    if (checkError) {
+      throw checkError;
+    }
+
+    if (existingVote) {
+      if (existingVote.vote_type === voteType) {
+        // Same vote - remove it
+        const { error: deleteError } = await supabase
+          .from('votes')
+          .delete()
+          .eq('id', existingVote.id);
+
+        if (deleteError) throw deleteError;
+      } else {
+        // Different vote - update it
+        const { error: updateError } = await supabase
+          .from('votes')
+          .update({ vote_type: voteType })
+          .eq('id', existingVote.id);
+
+        if (updateError) throw updateError;
+      }
+    } else {
+      // New vote - insert it
+      const { error: insertError } = await supabase
+        .from('votes')
+        .insert({
+          user_id: user.id,
+          sidenote_id: sidenoteId,
+          vote_type: voteType
+        });
+
+      if (insertError) throw insertError;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error voting on sidenote:', error);
+    return false;
+  }
+}
+
+/**
+ * Vote on a reply
+ */
+export async function voteReply(replyId: string, voteType: -1 | 1): Promise<boolean> {
+  try {
+    const supabase = createClient();
+
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      throw new Error('User not authenticated');
+    }
+
+    // Check if user already has a vote
+    const { data: existingVote, error: checkError } = await supabase
+      .from('votes')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('reply_id', replyId)
+      .maybeSingle();
+
+    if (checkError) {
+      throw checkError;
+    }
+
+    if (existingVote) {
+      if (existingVote.vote_type === voteType) {
+        // Same vote - remove it
+        const { error: deleteError } = await supabase
+          .from('votes')
+          .delete()
+          .eq('id', existingVote.id);
+
+        if (deleteError) throw deleteError;
+      } else {
+        // Different vote - update it
+        const { error: updateError } = await supabase
+          .from('votes')
+          .update({ vote_type: voteType })
+          .eq('id', existingVote.id);
+
+        if (updateError) throw updateError;
+      }
+    } else {
+      // New vote - insert it
+      const { error: insertError } = await supabase
+        .from('votes')
+        .insert({
+          user_id: user.id,
+          reply_id: replyId,
+          vote_type: voteType
+        });
+
+      if (insertError) throw insertError;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error voting on reply:', error);
+    return false;
+  }
+}
+
+/**
+ * Get user's vote on a sidenote
+ */
+export async function getUserVoteOnSidenote(sidenoteId: string): Promise<Vote | null> {
+  try {
+    const supabase = createClient();
+
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return null;
+    }
+
+    const { data, error } = await supabase
+      .from('votes')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('sidenote_id', sidenoteId)
+      .maybeSingle();
+
+    if (error) {
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error getting user vote on sidenote:', error);
+    return null;
+  }
+}
+
+/**
+ * Get user's vote on a reply
+ */
+export async function getUserVoteOnReply(replyId: string): Promise<Vote | null> {
+  try {
+    const supabase = createClient();
+
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return null;
+    }
+
+    const { data, error } = await supabase
+      .from('votes')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('reply_id', replyId)
+      .maybeSingle();
+
+    if (error) {
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error getting user vote on reply:', error);
+    return null;
   }
 }
 

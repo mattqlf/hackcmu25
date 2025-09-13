@@ -22,7 +22,7 @@ export async function GET(
     const response = await fetch(htmlUrl, {
       method: "GET",
       headers: {
-        "User-Agent": "ArXivDocs/1.0 (mailto:support@arxivdocs.com)",
+        "User-Agent": "PaperSync/1.0 (mailto:support@papersync.com)",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
       },
     });
