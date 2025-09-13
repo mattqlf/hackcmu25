@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import { ThemeProvider } from "next-themes";
+import { SidenotesProvider } from "@/components/providers/SidenotesProvider";
 import "./globals.css";
+import "sidenotes/dist/sidenotes.css";
 
 const defaultUrl = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`
@@ -33,7 +35,9 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          {children}
+          <SidenotesProvider>
+            {children}
+          </SidenotesProvider>
         </ThemeProvider>
       </body>
     </html>
