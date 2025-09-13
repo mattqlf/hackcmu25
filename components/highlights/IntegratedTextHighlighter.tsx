@@ -323,7 +323,17 @@ export function IntegratedTextHighlighter({
       highlightSpan.setAttribute('data-sidenote-id', sidenote.id);
       highlightSpan.title = `Note: ${sidenote.content}`;
 
-      range.surroundContents(highlightSpan);
+      // Use a more robust method to wrap content
+      try {
+        // Try the simple approach first (works for ranges within a single text node)
+        range.surroundContents(highlightSpan);
+      } catch (surroundError) {
+        // Fallback for complex ranges that span multiple nodes
+        const contents = range.extractContents();
+        highlightSpan.appendChild(contents);
+        range.insertNode(highlightSpan);
+      }
+
       setHighlightElements(prev => new Set([...prev, highlightSpan]));
 
       // Add click handler to mimic InlineAnchor behavior
