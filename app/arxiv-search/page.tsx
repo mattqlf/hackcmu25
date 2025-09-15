@@ -331,6 +331,45 @@ function ArxivSearchContent() {
           </div>
         )}
 
+        {/* Check it out */}
+        {!results && !loading && !error && (
+          <div className="liquid-container mb-8">
+            <h2 className="section-header mb-6">Check it out</h2>
+            <div className="space-y-4">
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200/50 rounded-lg p-6 hover:shadow-md transition-shadow duration-200">
+                <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-slate-900 mb-2 leading-tight">
+                      Attention Is All You Need
+                    </h3>
+                    <div className="text-sm text-slate-500 mb-4">
+                      Authors: Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N. Gomez, Lukasz Kaiser, Illia Polosukhin
+                    </div>
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <Link
+                      href="/paper/1706.03762v7"
+                      className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                    >
+                      <Eye className="w-4 h-4 mr-2" />
+                      Read Paper
+                    </Link>
+                    <a
+                      href="https://arxiv.org/abs/1706.03762v7"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors text-sm font-medium"
+                    >
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      ArXiv
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Results Display */}
         {results && (
           <div className="space-y-6">

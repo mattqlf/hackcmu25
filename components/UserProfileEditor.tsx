@@ -136,6 +136,21 @@ export function UserProfileEditor({ onClose, onSave }: UserProfileEditorProps) {
       });
 
       if (success) {
+        // Also update the user metadata so the auth button shows the new name immediately
+        const supabase = createClient();
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            await supabase.auth.updateUser({
+              data: {
+                full_name: fullName.trim()
+              }
+            });
+          }
+        } catch (error) {
+          console.log('Could not update user metadata:', error);
+        }
+
         alert('Profile updated successfully!');
 
         // Trigger a page reload to refresh all profile data in the app

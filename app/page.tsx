@@ -18,6 +18,21 @@ export default function Home() {
           <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-2xl mx-auto font-medium">
             Bringing collaboration to paper reading.
           </p>
+
+          {/* YouTube Video Embed */}
+          <div className="mb-8 flex justify-center">
+            <div className="relative w-full max-w-4xl aspect-video rounded-lg overflow-hidden shadow-lg">
+              <iframe
+                src="https://www.youtube.com/embed/pnznDL9SZvI"
+                title="YouTube video player"
+                style={{ border: 0 }}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+                className="absolute inset-0 w-full h-full"
+              ></iframe>
+            </div>
+          </div>
+
           <div className="flex justify-center">
             <Button asChild size="lg" className="text-lg px-8 py-4 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70">
               <Link href="/arxiv-search" className="flex items-center gap-2">
