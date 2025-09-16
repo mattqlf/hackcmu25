@@ -57,7 +57,7 @@ export function buildAuthorizationUrl(state: string, request?: Request): string 
   } else if (process.env.VERCEL_URL) {
     baseUrl = `https://${process.env.VERCEL_URL}`;
   } else {
-    baseUrl = 'https://hackcmu25.vercel.app';
+    baseUrl = 'https://arxivsync.vercel.app';
   }
 
   const redirectUri = `${baseUrl}/api/auth/orcid/callback`;
@@ -87,7 +87,7 @@ export async function exchangeCodeForToken(code: string, state: string): Promise
     ? 'http://127.0.0.1:3000'
     : process.env.VERCEL_URL
     ? `https://${process.env.VERCEL_URL}`
-    : 'https://hackcmu25.vercel.app';
+    : 'https://arxivsync.vercel.app';
 
   const redirectUri = `${baseUrl}/api/auth/orcid/callback`;
 
