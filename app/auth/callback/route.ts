@@ -12,8 +12,8 @@ export async function GET(request: NextRequest) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error) {
-      // Redirect to arxiv-search after successful OAuth login
-      redirect('/arxiv-search');
+      // Redirect to dashboard after successful OAuth login
+      redirect('/dashboard');
     } else {
       // Redirect to error page with error message
       redirect(`/auth/error?error=${encodeURIComponent(error.message)}`);

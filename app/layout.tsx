@@ -12,8 +12,8 @@ const defaultUrl = process.env.VERCEL_URL
 
 export const metadata: Metadata = {
   metadataBase: new URL(defaultUrl),
-  title: "PaperSync",
-  description: "Collaborative document editing and synchronization platform",
+  title: "arXivSync",
+  description: "Making arXiv papers collaborative.",
   icons: {
     icon: "/favicon.ico",
   },

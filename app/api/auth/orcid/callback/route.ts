@@ -105,7 +105,7 @@ export async function GET(request: NextRequest) {
       type: 'magiclink',
       email: user.email,
       options: {
-        redirectTo: `${request.nextUrl.origin}/arxiv-search`,
+        redirectTo: `${request.nextUrl.origin}/dashboard`,
       },
     });
 
@@ -133,7 +133,7 @@ export async function GET(request: NextRequest) {
 
         if (!setSessionError) {
           // Redirect to success page
-          return NextResponse.redirect(`${request.nextUrl.origin}/arxiv-search`);
+          return NextResponse.redirect(`${request.nextUrl.origin}/dashboard`);
         }
       }
     }
@@ -144,7 +144,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Final fallback
-    return NextResponse.redirect(`${request.nextUrl.origin}/arxiv-search`);
+    return NextResponse.redirect(`${request.nextUrl.origin}/dashboard`);
   } catch (error) {
     console.error('ORCID OAuth callback failed:', error);
     return NextResponse.redirect(

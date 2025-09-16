@@ -17,8 +17,8 @@ export async function GET(request: NextRequest) {
     });
     if (!error) {
       // Check if this is a new user without a complete profile
-      // Always redirect to arxiv-search after email confirmation
-      redirect('/arxiv-search');
+      // Always redirect to dashboard after email confirmation
+      redirect('/dashboard');
     } else {
       // redirect the user to an error page with some instructions
       redirect(`/auth/error?error=${error?.message}`);

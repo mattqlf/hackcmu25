@@ -1,5 +1,73 @@
 import { NextRequest, NextResponse } from "next/server";
 
+interface ArxivPaper {
+  id: string;
+  title: string;
+  abstract: string;
+  authors?: string;
+  published?: string;
+  categories?: string;
+}
+
+async function fetchPaperMetadata(id: string): Promise<ArxivPaper> {
+  try {
+    // Use ArXiv API to get paper metadata
+    const apiUrl = `http://export.arxiv.org/api/query?id_list=${id}`;
+
+    const response = await fetch(apiUrl, {
+      headers: {
+        "User-Agent": "arXivSync/1.0 (mailto:support@arXivSync.com)"
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`ArXiv API responded with status: ${response.status}`);
+    }
+
+    const xmlText = await response.text();
+
+    // Parse the XML response to extract paper metadata
+    const titleMatch = xmlText.match(/<title>(.*?)<\/title>/s);
+    const summaryMatch = xmlText.match(/<summary>(.*?)<\/summary>/s);
+    const authorMatches = xmlText.match(/<author>(.*?)<\/author>/gs);
+    const publishedMatch = xmlText.match(/<published>(.*?)<\/published>/);
+    const categoryMatches = xmlText.match(/term="([^"]+)"/g);
+
+    const title = titleMatch ? titleMatch[1].trim().replace(/\n\s+/g, ' ') : `Paper ${id}`;
+    const abstract = summaryMatch ? summaryMatch[1].trim().replace(/\n\s+/g, ' ') : '';
+
+    // Extract author names
+    const authors = authorMatches ?
+      authorMatches.map(author => {
+        const nameMatch = author.match(/<name>(.*?)<\/name>/);
+        return nameMatch ? nameMatch[1].trim() : '';
+      }).filter(name => name).join(', ') : '';
+
+    const published = publishedMatch ? publishedMatch[1].trim() : '';
+
+    // Extract categories
+    const categories = categoryMatches ?
+      categoryMatches.map(cat => cat.match(/term="([^"]+)"/)?.[1]).filter(Boolean).join(', ') : '';
+
+    return {
+      id,
+      title,
+      abstract,
+      authors,
+      published,
+      categories
+    };
+  } catch (error) {
+    console.error('Error fetching paper metadata:', error);
+    // Return basic metadata if API fails
+    return {
+      id,
+      title: `Paper ${id}`,
+      abstract: `ArXiv paper ${id}`
+    };
+  }
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -14,7 +82,10 @@ export async function GET(
   }
 
   try {
-    // Try to fetch the HTML version first
+    // Fetch paper metadata from ArXiv API
+    const paperData = await fetchPaperMetadata(id);
+
+    // Try to fetch the HTML version
     const htmlUrl = `https://arxiv.org/html/${id}`;
 
     console.log(`Fetching ArXiv HTML from: ${htmlUrl}`);
@@ -22,7 +93,7 @@ export async function GET(
     const response = await fetch(htmlUrl, {
       method: "GET",
       headers: {
-        "User-Agent": "PaperSync/1.0 (mailto:support@papersync.com)",
+        "User-Agent": "arXivSync/1.0 (mailto:support@arXivSync.com)",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
       },
     });
@@ -59,6 +130,7 @@ export async function GET(
       id: id,
       htmlContent: cleanedHtml,
       sourceUrl: htmlUrl,
+      paperData: paperData,
       debug: debugInfo
     }, {
       status: 200,

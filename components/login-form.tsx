@@ -55,7 +55,7 @@ export function LoginForm({
       }
 
       if (data.user) {
-        router.push("/arxiv-search");
+        router.push("/dashboard");
         router.refresh();
       }
     } catch (error: unknown) {

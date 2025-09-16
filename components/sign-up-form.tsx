@@ -74,7 +74,7 @@ export function SignUpForm({
         email: email.trim(),
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/arxiv-search`,
+          emailRedirectTo: `${window.location.origin}/dashboard`,
           data: {
             full_name: fullName.trim() || null
           }

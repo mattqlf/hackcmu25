@@ -33,7 +33,7 @@ export function AuthHashHandler() {
               window.history.replaceState(null, '', window.location.pathname);
 
               // Redirect to the protected page
-              router.push('/arxiv-search');
+              router.push('/dashboard');
               return;
             } else {
               console.error('Session creation failed:', error);

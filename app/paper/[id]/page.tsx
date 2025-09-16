@@ -5,8 +5,15 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, ExternalLink, Loader2 } from "lucide-react";
+import { ArrowLeft, ExternalLink, Loader2, Heart } from "lucide-react";
 import { ModernTextHighlighter } from "@/components/highlights/ModernTextHighlighter";
+import {
+  addToFavorites,
+  removeFromFavorites,
+  isFavorited,
+  addToViewHistory,
+  type Paper
+} from "@/lib/supabase/user-papers";
 
 export default function PaperPage() {
   const params = useParams();
@@ -14,6 +21,9 @@ export default function PaperPage() {
   const [htmlContent, setHtmlContent] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>("");
+  const [paperData, setPaperData] = useState<Paper | null>(null);
+  const [isLiked, setIsLiked] = useState(false);
+  const [likingPaper, setLikingPaper] = useState(false);
 
   useEffect(() => {
     const fetchPaperContent = async () => {
@@ -32,6 +42,18 @@ export default function PaperPage() {
 
         const data = await response.json();
         setHtmlContent(data.htmlContent);
+
+        // Extract paper data for view history and favorites
+        if (data.paperData) {
+          setPaperData(data.paperData);
+
+          // Add to view history
+          await addToViewHistory(data.paperData);
+
+          // Check if paper is already liked
+          const liked = await isFavorited(id);
+          setIsLiked(liked);
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load paper");
       } finally {
@@ -42,6 +64,29 @@ export default function PaperPage() {
     fetchPaperContent();
   }, [id]);
 
+  const handleToggleLike = async () => {
+    if (!paperData || likingPaper) return;
+
+    setLikingPaper(true);
+    try {
+      if (isLiked) {
+        const success = await removeFromFavorites(id);
+        if (success) {
+          setIsLiked(false);
+        }
+      } else {
+        const success = await addToFavorites(paperData);
+        if (success) {
+          setIsLiked(true);
+        }
+      }
+    } catch (error) {
+      console.error('Error toggling like:', error);
+    } finally {
+      setLikingPaper(false);
+    }
+  };
+
   if (loading) {
     return (
       <main className="min-h-screen bg-background">
@@ -50,9 +95,9 @@ export default function PaperPage() {
             <div className="flex justify-between items-center h-16">
               <div className="flex items-center gap-4">
                 <Button variant="ghost" size="sm" asChild>
-                  <Link href="/arxiv-search">
+                  <Link href="/dashboard">
                     <ArrowLeft className="h-4 w-4 mr-2" />
-                    Back to Search
+                    Dashboard
                   </Link>
                 </Button>
                 <span className="text-lg font-semibold">Paper: {id}</span>
@@ -83,9 +128,9 @@ export default function PaperPage() {
             <div className="flex justify-between items-center h-16">
               <div className="flex items-center gap-4">
                 <Button variant="ghost" size="sm" asChild>
-                  <Link href="/arxiv-search">
+                  <Link href="/dashboard">
                     <ArrowLeft className="h-4 w-4 mr-2" />
-                    Back to Search
+                    Dashboard
                   </Link>
                 </Button>
                 <span className="text-lg font-semibold">Paper: {id}</span>
@@ -114,7 +159,7 @@ export default function PaperPage() {
               <p className="text-sm mb-4">{error}</p>
               <div className="flex gap-2">
                 <Button variant="outline" asChild>
-                  <Link href="/arxiv-search">Back to Search</Link>
+                  <Link href="/dashboard">Back to Dashboard</Link>
                 </Button>
                 <Button asChild>
                   <a
@@ -140,24 +185,36 @@ export default function PaperPage() {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-4">
               <Button variant="ghost" size="sm" asChild>
-                <Link href="/arxiv-search">
+                <Link href="/dashboard">
                   <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back to Search
+                  Dashboard
                 </Link>
               </Button>
               <span className="text-lg font-semibold">Paper: {id}</span>
             </div>
-            <Button variant="outline" size="sm" asChild>
-              <a
-                href={`https://arxiv.org/abs/${id}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2"
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleToggleLike}
+                disabled={likingPaper}
+                className={`flex items-center gap-2 ${isLiked ? 'text-red-500 hover:text-red-600' : 'text-gray-500 hover:text-red-500'}`}
               >
-                View on ArXiv
-                <ExternalLink className="h-4 w-4" />
-              </a>
-            </Button>
+                <Heart className={`h-4 w-4 ${isLiked ? 'fill-current' : ''}`} />
+                {isLiked ? 'Liked' : 'Like'}
+              </Button>
+                <Button variant="outline" size="sm" asChild>
+                  <a
+                    href={`https://arxiv.org/abs/${id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2"
+                  >
+                    View on ArXiv
+                    <ExternalLink className="h-4 w-4" />
+                  </a>
+                </Button>
+              </div>
           </div>
         </div>
       </nav>

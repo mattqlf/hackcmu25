@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
     const response = await fetch(fullUrl, {
       method: "GET",
       headers: {
-        "User-Agent": "PaperSync/1.0 (mailto:support@papersync.com)",
+        "User-Agent": "arXivSync/1.0 (mailto:support@arXivSync.com)",
         "Accept": "image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
         "Referer": "https://arxiv.org/",
         "Origin": "https://arxiv.org",
@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
           const altResponse = await fetch(altUrl, {
             method: "GET",
             headers: {
-              "User-Agent": "PaperSync/1.0 (mailto:support@papersync.com)",
+              "User-Agent": "arXivSync/1.0 (mailto:support@arXivSync.com)",
               "Accept": "image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
               "Referer": "https://arxiv.org/",
             },
