@@ -2,21 +2,13 @@ import jwt from 'jsonwebtoken';
 import { createClient } from '@/lib/supabase/server';
 import { createServerClient } from '@supabase/ssr';
 
-// ORCID OAuth endpoints
-function getORCIDBaseUrl(): string {
-  const environment = process.env.ORCID_ENVIRONMENT || 'sandbox';
-  const baseUrl = environment === 'production'
-    ? 'https://orcid.org'
-    : 'https://sandbox.orcid.org';
-
-  console.log('ORCID Base URL:', baseUrl, 'Environment:', environment);
-  return baseUrl;
-}
+// ORCID OAuth endpoints - Production only
+const ORCID_BASE_URL = 'https://orcid.org';
 
 export const ORCID_ENDPOINTS = {
-  get authorize() { return `${getORCIDBaseUrl()}/oauth/authorize`; },
-  get token() { return `${getORCIDBaseUrl()}/oauth/token`; },
-  get userinfo() { return `${getORCIDBaseUrl()}/oauth/userinfo`; },
+  authorize: `${ORCID_BASE_URL}/oauth/authorize`,
+  token: `${ORCID_BASE_URL}/oauth/token`,
+  userinfo: `${ORCID_BASE_URL}/oauth/userinfo`,
 };
 
 export interface ORCIDTokenResponse {
@@ -52,7 +44,6 @@ export function buildAuthorizationUrl(state: string, request?: Request): string 
   console.log('NODE_ENV:', process.env.NODE_ENV);
   console.log('ORCID_CLIENT_ID:', process.env.ORCID_CLIENT_ID ? 'SET' : 'MISSING');
   console.log('ORCID_CLIENT_SECRET:', process.env.ORCID_CLIENT_SECRET ? 'SET' : 'MISSING');
-  console.log('ORCID_ENVIRONMENT:', process.env.ORCID_ENVIRONMENT);
 
   if (!process.env.ORCID_CLIENT_ID) {
     throw new Error('ORCID_CLIENT_ID environment variable is missing');
